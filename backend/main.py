@@ -123,7 +123,11 @@ def init_sample_data():
     db.close()
 
 app = FastAPI(title="Health Surveillance API", version="1.0.0")
-init_sample_data()
+
+# Initialize data only if not in production
+import os
+if os.getenv("RENDER") != "true":
+    init_sample_data()
 
 app.add_middleware(
     CORSMiddleware,
