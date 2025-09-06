@@ -22,62 +22,30 @@ import {
   NotificationsActive,
   Send
 } from '@mui/icons-material';
+import { getAlerts, getAlertStats } from '../services/apiService';
 
 function Alerts() {
   const [alerts, setAlerts] = useState([]);
-  const [stats, setStats] = useState({ active: 0, resolved: 0, critical: 0 });
+  const [stats, setStats] = useState({ total_active_alerts: 0, by_severity: {} });
 
   useEffect(() => {
-    const mockAlerts = [
-      {
-        id: 1,
-        type: 'outbreak_warning',
-        severity: 'critical',
-        title: 'Cholera Outbreak Alert',
-        message: 'Multiple cholera cases reported in Village B. Immediate action required.',
-        location: 'Village B',
-        timestamp: '2024-01-15 14:30',
-        status: 'active'
-      },
-      {
-        id: 2,
-        type: 'water_contamination',
-        severity: 'high',
-        title: 'Water Contamination Detected',
-        message: 'High bacterial count detected in River B water source.',
-        location: 'River B',
-        timestamp: '2024-01-15 12:15',
-        status: 'active'
-      },
-      {
-        id: 3,
-        type: 'resource_needed',
-        severity: 'medium',
-        title: 'Medical Supplies Low',
-        message: 'ORS packets running low at Village A health center.',
-        location: 'Village A',
-        timestamp: '2024-01-15 09:45',
-        status: 'active'
-      },
-      {
-        id: 4,
-        type: 'outbreak_warning',
-        severity: 'low',
-        title: 'Diarrhea Cases Increase',
-        message: 'Slight increase in diarrhea cases in Village C.',
-        location: 'Village C',
-        timestamp: '2024-01-14 16:20',
-        status: 'resolved'
-      }
-    ];
-    
-    setAlerts(mockAlerts);
-    setStats({
-      active: mockAlerts.filter(a => a.status === 'active').length,
-      resolved: mockAlerts.filter(a => a.status === 'resolved').length,
-      critical: mockAlerts.filter(a => a.severity === 'critical').length
-    });
+    loadData();
+    const interval = setInterval(loadData, 5000); // Refresh every 5 seconds
+    return () => clearInterval(interval);
   }, []);
+
+  const loadData = async () => {
+    try {
+      const [alertsData, statsData] = await Promise.all([
+        getAlerts(),
+        getAlertStats()
+      ]);
+      setAlerts(alertsData);
+      setStats(statsData);
+    } catch (error) {
+      console.error('Failed to load alerts data:', error);
+    }
+  };
 
   const getSeverityIcon = (severity) => {
     switch (severity) {
@@ -99,10 +67,17 @@ function Alerts() {
     }
   };
 
-  const handleResolveAlert = (id) => {
-    setAlerts(alerts.map(alert => 
-      alert.id === id ? { ...alert, status: 'resolved' } : alert
-    ));
+  const handleResolveAlert = async (id) => {
+    try {
+      await fetch(`http://localhost:8000/api/alerts/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ is_active: false })
+      });
+      loadData(); // Refresh data
+    } catch (error) {
+      console.error('Failed to resolve alert:', error);
+    }
   };
 
   const handleSendNotification = (alert) => {
@@ -125,7 +100,7 @@ function Alerts() {
                 <NotificationsActive sx={{ fontSize: 40, color: 'primary.main', mb: 2 }} />
               </Badge>
               <Typography variant="h6">Active Alerts</Typography>
-              <Typography variant="h3" color="error">{stats.active}</Typography>
+              <Typography variant="h3" color="error">{stats.total_active_alerts || 0}</Typography>
             </CardContent>
           </Card>
         </Grid>
@@ -135,7 +110,7 @@ function Alerts() {
             <CardContent>
               <Error sx={{ fontSize: 40, color: 'error.main', mb: 2 }} />
               <Typography variant="h6">Critical Alerts</Typography>
-              <Typography variant="h3" color="error">{stats.critical}</Typography>
+              <Typography variant="h3" color="error">{stats.by_severity?.critical || 0}</Typography>
             </CardContent>
           </Card>
         </Grid>
@@ -145,7 +120,7 @@ function Alerts() {
             <CardContent>
               <CheckCircle sx={{ fontSize: 40, color: 'success.main', mb: 2 }} />
               <Typography variant="h6">Resolved</Typography>
-              <Typography variant="h3" color="success.main">{stats.resolved}</Typography>
+              <Typography variant="h3" color="success.main">{alerts.filter(a => !a.is_active).length}</Typography>
             </CardContent>
           </Card>
         </Grid>
@@ -155,7 +130,7 @@ function Alerts() {
             <CardContent>
               <Typography variant="h6">Response Rate</Typography>
               <Typography variant="h3" color="primary">
-                {((stats.resolved / (stats.active + stats.resolved)) * 100).toFixed(1)}%
+                {alerts.length > 0 ? ((alerts.filter(a => !a.is_active).length / alerts.length) * 100).toFixed(1) : 0}%
               </Typography>
             </CardContent>
           </Card>
@@ -165,7 +140,7 @@ function Alerts() {
           <Paper sx={{ p: 2 }}>
             <Typography variant="h6" gutterBottom>Active Alerts</Typography>
             <List>
-              {alerts.filter(alert => alert.status === 'active').map((alert) => (
+              {alerts.filter(alert => alert.is_active).map((alert) => (
                 <ListItem
                   key={alert.id}
                   sx={{
@@ -181,15 +156,10 @@ function Alerts() {
                   <ListItemText
                     primary={
                       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                        <span style={{ fontSize: '1.25rem', fontWeight: 500 }}>{alert.title}</span>
+                        <span style={{ fontSize: '1.25rem', fontWeight: 500 }}>Alert #{alert.id}</span>
                         <Chip
                           label={alert.severity}
                           color={getSeverityColor(alert.severity)}
-                          size="small"
-                        />
-                        <Chip
-                          label={alert.location}
-                          variant="outlined"
                           size="small"
                         />
                       </div>
@@ -197,10 +167,10 @@ function Alerts() {
                     secondary={
                       <>
                         <div style={{ marginTop: 8, fontSize: '0.875rem' }}>
-                          {alert.message}
+                          {alert.severity} severity alert from mobile app
                         </div>
                         <div style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.7)', marginTop: 4 }}>
-                          {alert.timestamp}
+                          {new Date(alert.created_at).toLocaleString()}
                         </div>
                       </>
                     }
@@ -231,14 +201,14 @@ function Alerts() {
           <Paper sx={{ p: 2 }}>
             <Typography variant="h6" gutterBottom>Recent Resolved Alerts</Typography>
             <List>
-              {alerts.filter(alert => alert.status === 'resolved').map((alert) => (
+              {alerts.filter(alert => !alert.is_active).map((alert) => (
                 <ListItem key={alert.id} sx={{ opacity: 0.7 }}>
                   <ListItemIcon>
                     <CheckCircle color="success" />
                   </ListItemIcon>
                   <ListItemText
-                    primary={alert.title}
-                    secondary={`${alert.message} - Resolved on ${alert.timestamp}`}
+                    primary={`Alert #${alert.id}`}
+                    secondary={`${alert.severity} severity alert - Resolved on ${new Date(alert.created_at).toLocaleString()}`}
                   />
                 </ListItem>
               ))}

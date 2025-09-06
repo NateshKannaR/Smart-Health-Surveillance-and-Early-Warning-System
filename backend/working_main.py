@@ -202,19 +202,19 @@ async def get_alerts():
     try:
         conn = sqlite3.connect("health_surveillance.db")
         cursor = conn.cursor()
-        cursor.execute("SELECT id, severity, is_active, created_at FROM alerts ORDER BY id DESC LIMIT 10")
+        cursor.execute("SELECT id, alert_type, location, message, severity, created_at, is_resolved FROM alerts ORDER BY id DESC LIMIT 10")
         rows = cursor.fetchall()
         conn.close()
         return [{
             "id": r[0], 
-            "severity": r[1],
-            "is_active": bool(r[2]),
-            "created_at": str(r[3]) if r[3] else "",
-            "message": f"Alert with {r[1]} severity",  # default message
-            "location": "Mobile Report"  # default location
+            "alert_type": r[1],
+            "location": r[2],
+            "message": r[3],
+            "severity": r[4], 
+            "created_at": r[5],
+            "is_active": not r[6]
         } for r in rows]
-    except Exception as e:
-        print(f"Alerts error: {e}")
+    except:
         return []
 
 @app.get("/api/health/reports")
@@ -222,20 +222,20 @@ async def get_health_reports():
     try:
         conn = sqlite3.connect("health_surveillance.db")
         cursor = conn.cursor()
-        cursor.execute("SELECT id, disease, severity, location, reported_at FROM health_reports ORDER BY id DESC LIMIT 10")
+        cursor.execute("SELECT id, patient_age, patient_gender, symptoms, location, severity, disease_suspected, reported_at FROM health_reports ORDER BY id DESC LIMIT 10")
         rows = cursor.fetchall()
         conn.close()
         return [{
             "id": r[0],
-            "disease": r[1],
-            "severity": r[2],
-            "location": r[3],
-            "reported_at": str(r[4]) if r[4] else "",
-            "patient_age": 25,  # default values
-            "patient_gender": "unknown"
+            "patient_age": r[1],
+            "patient_gender": r[2], 
+            "symptoms": r[3],
+            "location": r[4],
+            "severity": r[5],
+            "disease": r[6],
+            "reported_at": r[7]
         } for r in rows]
-    except Exception as e:
-        print(f"Health reports error: {e}")
+    except:
         return []
 
 @app.get("/api/alerts/dashboard")

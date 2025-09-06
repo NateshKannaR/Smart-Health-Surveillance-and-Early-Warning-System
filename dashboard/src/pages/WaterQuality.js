@@ -22,31 +22,32 @@ import {
   Thermostat,
   Warning
 } from '@mui/icons-material';
+import { getWaterQualityReports, getWaterQualityStats } from '../services/apiService';
 
 function WaterQuality() {
   const [waterData, setWaterData] = useState([]);
-  const [stats, setStats] = useState({ safe: 0, contaminated: 0, total: 0 });
+  const [stats, setStats] = useState({ safe_sources: 0, contaminated_sources: 0, total_sources: 0 });
 
   useEffect(() => {
-    // Mock water quality data
-    const mockData = [
-      { id: 1, location: 'Well A', ph: 7.2, turbidity: 2.1, bacteria: 45, temp: 24, status: 'safe', lastTest: '2024-01-15' },
-      { id: 2, location: 'River B', ph: 6.8, turbidity: 8.5, bacteria: 150, temp: 22, status: 'contaminated', lastTest: '2024-01-14' },
-      { id: 3, location: 'Pond C', ph: 7.5, turbidity: 3.2, bacteria: 80, temp: 26, status: 'safe', lastTest: '2024-01-13' },
-      { id: 4, location: 'Tap D', ph: 5.9, turbidity: 12.0, bacteria: 200, temp: 25, status: 'contaminated', lastTest: '2024-01-12' },
-    ];
-    
-    setWaterData(mockData);
-    setStats({
-      total: mockData.length,
-      safe: mockData.filter(d => d.status === 'safe').length,
-      contaminated: mockData.filter(d => d.status === 'contaminated').length
-    });
+    loadData();
+    const interval = setInterval(loadData, 5000); // Refresh every 5 seconds
+    return () => clearInterval(interval);
   }, []);
 
-  const getStatusColor = (status) => {
-    return status === 'safe' ? 'success' : 'error';
+  const loadData = async () => {
+    try {
+      const [reportsData, statsData] = await Promise.all([
+        getWaterQualityReports(),
+        getWaterQualityStats()
+      ]);
+      setWaterData(reportsData);
+      setStats(statsData);
+    } catch (error) {
+      console.error('Failed to load water quality data:', error);
+    }
   };
+
+
 
   const getParameterStatus = (value, min, max) => {
     if (value >= min && value <= max) return { color: 'success', status: 'Normal' };
@@ -67,7 +68,7 @@ function WaterQuality() {
             <CardContent>
               <WaterDrop sx={{ fontSize: 40, color: 'primary.main', mb: 2 }} />
               <Typography variant="h6">Total Sources</Typography>
-              <Typography variant="h3" color="primary">{stats.total}</Typography>
+              <Typography variant="h3" color="primary">{stats.total_sources || 0}</Typography>
             </CardContent>
           </Card>
         </Grid>
@@ -77,7 +78,7 @@ function WaterQuality() {
             <CardContent>
               <Science sx={{ fontSize: 40, color: 'success.main', mb: 2 }} />
               <Typography variant="h6">Safe Sources</Typography>
-              <Typography variant="h3" color="success.main">{stats.safe}</Typography>
+              <Typography variant="h3" color="success.main">{stats.safe_sources || 0}</Typography>
             </CardContent>
           </Card>
         </Grid>
@@ -87,7 +88,7 @@ function WaterQuality() {
             <CardContent>
               <Warning sx={{ fontSize: 40, color: 'error.main', mb: 2 }} />
               <Typography variant="h6">Contaminated</Typography>
-              <Typography variant="h3" color="error.main">{stats.contaminated}</Typography>
+              <Typography variant="h3" color="error.main">{stats.contaminated_sources || 0}</Typography>
             </CardContent>
           </Card>
         </Grid>
@@ -97,11 +98,11 @@ function WaterQuality() {
             <CardContent>
               <Typography variant="h6">Safety Rate</Typography>
               <Typography variant="h3" color="primary">
-                {((stats.safe / stats.total) * 100).toFixed(1)}%
+                {stats.total_sources > 0 ? ((stats.safe_sources / stats.total_sources) * 100).toFixed(1) : 0}%
               </Typography>
               <LinearProgress 
                 variant="determinate" 
-                value={(stats.safe / stats.total) * 100} 
+                value={stats.total_sources > 0 ? (stats.safe_sources / stats.total_sources) * 100 : 0} 
                 sx={{ mt: 1 }}
               />
             </CardContent>
@@ -127,14 +128,14 @@ function WaterQuality() {
                 <TableBody>
                   {waterData.map((source) => (
                     <TableRow key={source.id}>
-                      <TableCell>{source.location}</TableCell>
+                      <TableCell>Source {source.id}</TableCell>
                       <TableCell>
                         <Box display="flex" alignItems="center">
-                          {source.ph}
+                          {source.ph_level}
                           <Chip
                             size="small"
-                            label={getParameterStatus(source.ph, 6.5, 8.5).status}
-                            color={getParameterStatus(source.ph, 6.5, 8.5).color}
+                            label={getParameterStatus(source.ph_level, 6.5, 8.5).status}
+                            color={getParameterStatus(source.ph_level, 6.5, 8.5).color}
                             sx={{ ml: 1 }}
                           />
                         </Box>
@@ -152,27 +153,27 @@ function WaterQuality() {
                       </TableCell>
                       <TableCell>
                         <Box display="flex" alignItems="center">
-                          {source.bacteria}
+                          {source.bacterial_count}
                           <Chip
                             size="small"
-                            label={getParameterStatus(source.bacteria, 0, 100).status}
-                            color={getParameterStatus(source.bacteria, 0, 100).color}
+                            label={getParameterStatus(source.bacterial_count, 0, 100).status}
+                            color={getParameterStatus(source.bacterial_count, 0, 100).color}
                             sx={{ ml: 1 }}
                           />
                         </Box>
                       </TableCell>
                       <TableCell>
                         <Thermostat sx={{ mr: 1, verticalAlign: 'middle' }} />
-                        {source.temp}
+                        {source.temperature}
                       </TableCell>
                       <TableCell>
                         <Chip
-                          label={source.status}
-                          color={getStatusColor(source.status)}
+                          label={source.is_safe ? 'safe' : 'contaminated'}
+                          color={source.is_safe ? 'success' : 'error'}
                           variant="filled"
                         />
                       </TableCell>
-                      <TableCell>{source.lastTest}</TableCell>
+                      <TableCell>{new Date(source.tested_at).toLocaleDateString()}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>

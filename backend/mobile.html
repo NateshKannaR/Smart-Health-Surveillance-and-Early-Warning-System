@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Health Surveillance Mobile</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            animation: gradientShift 10s ease infinite;
+        }
+        @keyframes gradientShift {
+            0% { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+            25% { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
+            50% { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
+            75% { background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); }
+            100% { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+        }
+        .container { 
+            max-width: 400px; 
+            margin: 0 auto; 
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 20px; 
+            padding: 30px; 
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+        h1 { 
+            color: white; 
+            text-align: center; 
+            margin-bottom: 30px; 
+            font-size: 28px; 
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+        .form-group { margin-bottom: 20px; }
+        label { 
+            display: block; 
+            margin-bottom: 8px; 
+            font-weight: 600; 
+            color: white;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+        }
+        select, input { 
+            width: 100%; 
+            padding: 15px; 
+            border: none;
+            border-radius: 12px; 
+            font-size: 16px;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+        select::placeholder, input::placeholder { color: rgba(255, 255, 255, 0.7); }
+        select option { background: #333; color: white; }
+        button { 
+            width: 100%; 
+            padding: 15px; 
+            background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+            color: white; 
+            border: none; 
+            cursor: pointer; 
+            margin-top: 15px;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+        button:hover { 
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+        }
+        .success { 
+            background: linear-gradient(45deg, #2ecc71, #27ae60);
+            color: white; 
+            padding: 15px; 
+            border-radius: 12px; 
+            margin: 15px 0;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+        .error { 
+            background: linear-gradient(45deg, #e74c3c, #c0392b);
+            color: white; 
+            padding: 15px; 
+            border-radius: 12px; 
+            margin: 15px 0;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+        .tabs { 
+            display: flex; 
+            margin-bottom: 25px;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+        .tab { 
+            flex: 1; 
+            padding: 15px 10px; 
+            background: rgba(255, 255, 255, 0.1);
+            border: none; 
+            cursor: pointer;
+            color: white;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        .tab.active { 
+            background: linear-gradient(45deg, #3498db, #2980b9);
+            transform: scale(1.05);
+        }
+        .tab:hover { background: rgba(255, 255, 255, 0.2); }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Health Surveillance</h1>
+        
+        <div class="tabs">
+            <button class="tab active" onclick="showTab('health')">Health Report</button>
+            <button class="tab" onclick="showTab('water')">Water Quality</button>
+            <button class="tab" onclick="showTab('alert')">Alert</button>
+        </div>
+
+        <div id="health" class="tab-content active">
+            <form id="healthForm">
+                <div class="form-group">
+                    <label>Disease:</label>
+                    <select name="disease" required>
+                        <option value="">Select Disease</option>
+                        <option value="diarrhea">Diarrhea</option>
+                        <option value="cholera">Cholera</option>
+                        <option value="typhoid">Typhoid</option>
+                        <option value="hepatitis_a">Hepatitis A</option>
+                        <option value="dysentery">Dysentery</option>
+                        <option value="gastroenteritis">Gastroenteritis</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Severity:</label>
+                    <select name="severity" required>
+                        <option value="">Select Severity</option>
+                        <option value="mild">Mild</option>
+                        <option value="moderate">Moderate</option>
+                        <option value="severe">Severe</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Location:</label>
+                    <input type="text" name="location" placeholder="Enter location" required>
+                </div>
+                <div class="form-group">
+                    <label>Patient Age:</label>
+                    <input type="number" name="patient_age" min="1" max="120" placeholder="25" value="25">
+                </div>
+                <div class="form-group">
+                    <label>Patient Gender:</label>
+                    <select name="patient_gender">
+                        <option value="male">Male</option>
+                        <option value="female">Female</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+                <button type="submit">Submit Health Report</button>
+            </form>
+        </div>
+
+        <div id="water" class="tab-content">
+            <form id="waterForm">
+                <div class="form-group">
+                    <label>Water Safe:</label>
+                    <select name="is_safe" required>
+                        <option value="">Select Status</option>
+                        <option value="true">Safe</option>
+                        <option value="false">Contaminated</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>pH Level:</label>
+                    <input type="number" name="ph_level" step="0.1" min="0" max="14" placeholder="7.0" required>
+                </div>
+                <div class="form-group">
+                    <label>Turbidity:</label>
+                    <input type="number" name="turbidity" step="0.1" min="0" placeholder="5.0" required>
+                </div>
+                <div class="form-group">
+                    <label>Bacterial Count:</label>
+                    <input type="number" name="bacterial_count" min="0" placeholder="100" required>
+                </div>
+                <div class="form-group">
+                    <label>Temperature (°C):</label>
+                    <input type="number" name="temperature" step="0.1" placeholder="25.0" required>
+                </div>
+                <div class="form-group">
+                    <label>Location:</label>
+                    <input type="text" name="location" placeholder="Enter location" required>
+                </div>
+                <div class="form-group">
+                    <label>Source Type:</label>
+                    <select name="source_type" required>
+                        <option value="">Select Source</option>
+                        <option value="well">Well</option>
+                        <option value="river">River</option>
+                        <option value="pond">Pond</option>
+                        <option value="tap">Tap Water</option>
+                    </select>
+                </div>
+                <button type="submit">Submit Water Report</button>
+            </form>
+        </div>
+
+        <div id="alert" class="tab-content">
+            <form id="alertForm">
+                <div class="form-group">
+                    <label>Alert Severity:</label>
+                    <select name="severity" required>
+                        <option value="">Select Severity</option>
+                        <option value="low">Low</option>
+                        <option value="medium">Medium</option>
+                        <option value="high">High</option>
+                        <option value="critical">Critical</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Location:</label>
+                    <input type="text" name="location" placeholder="Enter location" value="Mobile Report">
+                </div>
+                <div class="form-group">
+                    <label>Message:</label>
+                    <input type="text" name="message" placeholder="Alert description" required>
+                </div>
+                <button type="submit">Create Alert</button>
+            </form>
+        </div>
+
+        <div id="message"></div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:8000/api';
+        
+        // Check if server is running
+        async function checkServer() {
+            try {
+                await fetch(`${API_URL.replace('/api', '')}/health`);
+                return true;
+            } catch {
+                showMessage('Backend server not running! Start with: uvicorn main:app --reload', 'error');
+                return false;
+            }
+        }
+
+        function showTab(tabName) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            event.target.classList.add('active');
+            document.getElementById(tabName).classList.add('active');
+        }
+
+        function showMessage(text, type) {
+            const msg = document.getElementById('message');
+            msg.innerHTML = `<div class="${type}">${text}</div>`;
+            setTimeout(() => msg.innerHTML = '', 3000);
+        }
+
+        document.getElementById('healthForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            const data = Object.fromEntries(formData);
+            data.patient_age = parseInt(data.patient_age) || 25;
+            
+            try {
+                const response = await fetch(`${API_URL}/health/reports`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                
+                if (response.ok) {
+                    showMessage('Health report submitted successfully!', 'success');
+                    e.target.reset();
+                } else {
+                    showMessage('Failed to submit health report', 'error');
+                }
+            } catch (error) {
+                showMessage('Network error. Please try again.', 'error');
+            }
+        });
+
+        document.getElementById('waterForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            const data = Object.fromEntries(formData);
+            data.is_safe = data.is_safe === 'true';
+            data.ph_level = parseFloat(data.ph_level);
+            data.turbidity = parseFloat(data.turbidity);
+            data.bacterial_count = parseInt(data.bacterial_count);
+            data.temperature = parseFloat(data.temperature);
+            // source_type comes from form now
+            
+            try {
+                const response = await fetch(`${API_URL}/water/sources`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                
+                if (response.ok) {
+                    showMessage('Water quality report submitted successfully!', 'success');
+                    e.target.reset();
+                } else {
+                    showMessage('Failed to submit water report', 'error');
+                }
+            } catch (error) {
+                showMessage('Network error. Please try again.', 'error');
+            }
+        });
+
+        document.getElementById('alertForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            const data = Object.fromEntries(formData);
+            
+            try {
+                const response = await fetch(`${API_URL}/alerts`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                
+                if (response.ok) {
+                    showMessage('Alert created successfully!', 'success');
+                    e.target.reset();
+                } else {
+                    showMessage('Failed to create alert', 'error');
+                }
+            } catch (error) {
+                showMessage('Network error. Please try again.', 'error');
+            }
+        });
+    </script>
+</body>
+</html>

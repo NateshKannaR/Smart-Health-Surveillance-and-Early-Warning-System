@@ -25,31 +25,46 @@ import {
   InputLabel
 } from '@mui/material';
 import { Add, LocalHospital, TrendingUp } from '@mui/icons-material';
+import { getHealthReports, getHealthStats } from '../services/apiService';
 
 function HealthReports() {
   const [reports, setReports] = useState([]);
+  const [stats, setStats] = useState({});
   const [open, setOpen] = useState(false);
   const [newReport, setNewReport] = useState({ disease: '', severity: '', location: '' });
 
   useEffect(() => {
-    // Mock data for demonstration
-    setReports([
-      { id: 1, disease: 'Diarrhea', severity: 'mild', location: 'Village A', date: '2024-01-15', reporter: 'Dr. Smith' },
-      { id: 2, disease: 'Cholera', severity: 'severe', location: 'Village B', date: '2024-01-14', reporter: 'Nurse Jane' },
-      { id: 3, disease: 'Typhoid', severity: 'moderate', location: 'Village C', date: '2024-01-13', reporter: 'Health Worker' },
-    ]);
+    loadData();
+    const interval = setInterval(loadData, 5000); // Refresh every 5 seconds
+    return () => clearInterval(interval);
   }, []);
 
-  const handleSubmit = () => {
-    const report = {
-      id: reports.length + 1,
-      ...newReport,
-      date: new Date().toISOString().split('T')[0],
-      reporter: 'Current User'
-    };
-    setReports([...reports, report]);
-    setNewReport({ disease: '', severity: '', location: '' });
-    setOpen(false);
+  const loadData = async () => {
+    try {
+      const [reportsData, statsData] = await Promise.all([
+        getHealthReports(),
+        getHealthStats()
+      ]);
+      setReports(reportsData);
+      setStats(statsData);
+    } catch (error) {
+      console.error('Failed to load health data:', error);
+    }
+  };
+
+  const handleSubmit = async () => {
+    try {
+      await fetch('http://localhost:8000/api/health/reports', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newReport)
+      });
+      setNewReport({ disease: '', severity: '', location: '' });
+      setOpen(false);
+      loadData(); // Refresh data
+    } catch (error) {
+      console.error('Failed to submit report:', error);
+    }
   };
 
   const getSeverityColor = (severity) => {
@@ -75,7 +90,7 @@ function HealthReports() {
             <CardContent>
               <LocalHospital sx={{ fontSize: 40, color: 'primary.main', mb: 2 }} />
               <Typography variant="h6">Total Reports</Typography>
-              <Typography variant="h3" color="primary">{reports.length}</Typography>
+              <Typography variant="h3" color="primary">{stats.total_reports || 0}</Typography>
             </CardContent>
           </Card>
         </Grid>
@@ -85,7 +100,7 @@ function HealthReports() {
             <CardContent>
               <TrendingUp sx={{ fontSize: 40, color: 'secondary.main', mb: 2 }} />
               <Typography variant="h6">This Week</Typography>
-              <Typography variant="h3" color="secondary">12</Typography>
+              <Typography variant="h3" color="secondary">{stats.recent_reports || 0}</Typography>
             </CardContent>
           </Card>
         </Grid>
@@ -95,7 +110,7 @@ function HealthReports() {
             <CardContent>
               <Typography variant="h6">Severe Cases</Typography>
               <Typography variant="h3" color="error">
-                {reports.filter(r => r.severity === 'severe').length}
+                {stats.by_severity?.severe || 0}
               </Typography>
             </CardContent>
           </Card>
@@ -137,8 +152,8 @@ function HealthReports() {
                         />
                       </TableCell>
                       <TableCell>{report.location}</TableCell>
-                      <TableCell>{report.date}</TableCell>
-                      <TableCell>{report.reporter}</TableCell>
+                      <TableCell>{new Date(report.reported_at).toLocaleDateString()}</TableCell>
+                      <TableCell>Mobile App</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>

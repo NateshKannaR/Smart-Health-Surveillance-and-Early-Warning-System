@@ -30,12 +30,11 @@ export const getHealthStats = async (location = null) => {
     return response.data;
   } catch (error) {
     console.error('Failed to fetch health stats:', error);
-    // UPDATE THESE VALUES:
     return {
-      total_reports: 75,
-      by_disease: { diarrhea: 25, cholera: 15, typhoid: 10, hepatitis_a: 12, dysentery: 8, gastroenteritis: 5 },
-      by_severity: { mild: 30, moderate: 25, severe: 20 },
-      recent_reports: 15
+      total_reports: 0,
+      by_disease: {},
+      by_severity: { mild: 0, moderate: 0, severe: 0 },
+      recent_reports: 0
     };
   }
 };
@@ -70,11 +69,10 @@ export const getWaterQualityStats = async () => {
     return response.data;
   } catch (error) {
     console.error('Failed to fetch water quality stats:', error);
-    // Return mock data as fallback
     return {
-      total_sources: 30,
-      safe_sources: 18,
-      contaminated_sources: 12
+      total_sources: 0,
+      safe_sources: 0,
+      contaminated_sources: 0
     };
   }
 };
@@ -97,10 +95,9 @@ export const getAlertStats = async () => {
     return response.data;
   } catch (error) {
     console.error('Failed to fetch alert stats:', error);
-    // Return mock data as fallback
     return {
-      total_active_alerts: 5,
-      by_severity: { low: 1, medium: 2, high: 1, critical: 1 }
+      total_active_alerts: 0,
+      by_severity: { low: 0, medium: 0, high: 0, critical: 0 }
     };
   }
 };
