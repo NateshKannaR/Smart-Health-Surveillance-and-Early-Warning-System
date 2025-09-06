@@ -57,10 +57,9 @@ async def create_health_report(report: HealthReportCreate):
         cursor = conn.cursor()
         cursor.execute("""
             INSERT INTO health_reports 
-            (reporter_id, patient_age, patient_gender, symptoms, location, severity, disease_suspected, reported_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        """, (1, report.patient_age, report.patient_gender, f'["{report.disease}"]', 
-              report.location, report.severity, report.disease, datetime.now()))
+            (disease, severity, location, reported_at)
+            VALUES (?, ?, ?, ?)
+        """, (report.disease, report.severity, report.location, datetime.now()))
         conn.commit()
         conn.close()
         return {"status": "success"}
@@ -92,9 +91,9 @@ async def create_alert(alert: AlertCreate):
         cursor = conn.cursor()
         cursor.execute("""
             INSERT INTO alerts 
-            (alert_type, location, message, severity, is_resolved, affected_population, created_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
-        """, ("mobile_alert", alert.location, alert.message, alert.severity, 0, 0, datetime.now()))
+            (severity, is_active, created_at)
+            VALUES (?, ?, ?)
+        """, (alert.severity, 1, datetime.now()))
         conn.commit()
         conn.close()
         return {"status": "success"}
