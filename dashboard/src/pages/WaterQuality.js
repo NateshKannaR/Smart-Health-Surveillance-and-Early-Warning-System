@@ -1,189 +1,196 @@
 import React, { useState, useEffect } from 'react';
-import {
-  Container,
-  Grid,
-  Paper,
-  Typography,
-  Card,
-  CardContent,
-  LinearProgress,
-  Box,
-  Chip,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow
-} from '@mui/material';
-import {
-  WaterDrop,
-  Science,
-  Thermostat,
-  Warning
-} from '@mui/icons-material';
-import { getWaterQualityReports, getWaterQualityStats } from '../services/apiService';
 
-function WaterQuality() {
-  const [waterData, setWaterData] = useState([]);
-  const [stats, setStats] = useState({ safe_sources: 0, contaminated_sources: 0, total_sources: 0 });
+const WaterQuality = () => {
+  const [waterSources, setWaterSources] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    loadData();
-    const interval = setInterval(loadData, 5000); // Refresh every 5 seconds
+    fetchWaterSources();
+    const interval = setInterval(fetchWaterSources, 5000);
     return () => clearInterval(interval);
   }, []);
 
-  const loadData = async () => {
+  const fetchWaterSources = async () => {
     try {
-      const [reportsData, statsData] = await Promise.all([
-        getWaterQualityReports(),
-        getWaterQualityStats()
-      ]);
-      setWaterData(reportsData);
-      setStats(statsData);
+      const response = await fetch('http://localhost:8000/api/water/sources');
+      if (response.ok) {
+        const data = await response.json();
+        setWaterSources(data);
+      }
     } catch (error) {
-      console.error('Failed to load water quality data:', error);
+      console.error('Error fetching water sources:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
-
-
-  const getParameterStatus = (value, min, max) => {
-    if (value >= min && value <= max) return { color: 'success', status: 'Normal' };
-    return { color: 'error', status: 'Alert' };
+  const deleteWaterSource = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this water source report?')) return;
+    
+    try {
+      const response = await fetch(`http://localhost:8000/api/water/sources/${id}`, {
+        method: 'DELETE'
+      });
+      
+      const result = await response.json();
+      
+      if (response.ok && result.status === 'success') {
+        // Remove from UI immediately
+        setWaterSources(waterSources.filter(w => w.id !== id));
+        alert('✅ Water source report deleted successfully');
+        // Refresh data after a short delay
+        setTimeout(() => fetchWaterSources(), 500);
+      } else {
+        alert('❌ Failed to delete water source report: ' + (result.message || 'Unknown error'));
+      }
+    } catch (error) {
+      console.error('Delete error:', error);
+      alert('❌ Error deleting water source report: ' + error.message);
+    }
   };
 
-  return (
-    <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-      <Grid container spacing={3}>
-        <Grid item xs={12}>
-          <Typography variant="h4" gutterBottom sx={{ color: 'white', mb: 3 }}>
-            Water Quality Monitoring
-          </Typography>
-        </Grid>
-        
-        <Grid item xs={12} md={3}>
-          <Card>
-            <CardContent>
-              <WaterDrop sx={{ fontSize: 40, color: 'primary.main', mb: 2 }} />
-              <Typography variant="h6">Total Sources</Typography>
-              <Typography variant="h3" color="primary">{stats.total_sources || 0}</Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        
-        <Grid item xs={12} md={3}>
-          <Card>
-            <CardContent>
-              <Science sx={{ fontSize: 40, color: 'success.main', mb: 2 }} />
-              <Typography variant="h6">Safe Sources</Typography>
-              <Typography variant="h3" color="success.main">{stats.safe_sources || 0}</Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        
-        <Grid item xs={12} md={3}>
-          <Card>
-            <CardContent>
-              <Warning sx={{ fontSize: 40, color: 'error.main', mb: 2 }} />
-              <Typography variant="h6">Contaminated</Typography>
-              <Typography variant="h3" color="error.main">{stats.contaminated_sources || 0}</Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        
-        <Grid item xs={12} md={3}>
-          <Card>
-            <CardContent>
-              <Typography variant="h6">Safety Rate</Typography>
-              <Typography variant="h3" color="primary">
-                {stats.total_sources > 0 ? ((stats.safe_sources / stats.total_sources) * 100).toFixed(1) : 0}%
-              </Typography>
-              <LinearProgress 
-                variant="determinate" 
-                value={stats.total_sources > 0 ? (stats.safe_sources / stats.total_sources) * 100 : 0} 
-                sx={{ mt: 1 }}
-              />
-            </CardContent>
-          </Card>
-        </Grid>
+  if (loading) return <div style={{color: 'white', textAlign: 'center', padding: '50px'}}>Loading water sources...</div>;
 
-        <Grid item xs={12}>
-          <Paper sx={{ p: 2 }}>
-            <Typography variant="h6" gutterBottom>Water Quality Parameters</Typography>
-            <TableContainer>
-              <Table>
-                <TableHead>
-                  <TableRow>
-                    <TableCell>Location</TableCell>
-                    <TableCell>pH Level</TableCell>
-                    <TableCell>Turbidity (NTU)</TableCell>
-                    <TableCell>Bacteria Count</TableCell>
-                    <TableCell>Temperature (°C)</TableCell>
-                    <TableCell>Status</TableCell>
-                    <TableCell>Last Test</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {waterData.map((source) => (
-                    <TableRow key={source.id}>
-                      <TableCell>Source {source.id}</TableCell>
-                      <TableCell>
-                        <Box display="flex" alignItems="center">
-                          {source.ph_level}
-                          <Chip
-                            size="small"
-                            label={getParameterStatus(source.ph_level, 6.5, 8.5).status}
-                            color={getParameterStatus(source.ph_level, 6.5, 8.5).color}
-                            sx={{ ml: 1 }}
-                          />
-                        </Box>
-                      </TableCell>
-                      <TableCell>
-                        <Box display="flex" alignItems="center">
-                          {source.turbidity}
-                          <Chip
-                            size="small"
-                            label={getParameterStatus(source.turbidity, 0, 5).status}
-                            color={getParameterStatus(source.turbidity, 0, 5).color}
-                            sx={{ ml: 1 }}
-                          />
-                        </Box>
-                      </TableCell>
-                      <TableCell>
-                        <Box display="flex" alignItems="center">
-                          {source.bacterial_count}
-                          <Chip
-                            size="small"
-                            label={getParameterStatus(source.bacterial_count, 0, 100).status}
-                            color={getParameterStatus(source.bacterial_count, 0, 100).color}
-                            sx={{ ml: 1 }}
-                          />
-                        </Box>
-                      </TableCell>
-                      <TableCell>
-                        <Thermostat sx={{ mr: 1, verticalAlign: 'middle' }} />
-                        {source.temperature}
-                      </TableCell>
-                      <TableCell>
-                        <Chip
-                          label={source.is_safe ? 'safe' : 'contaminated'}
-                          color={source.is_safe ? 'success' : 'error'}
-                          variant="filled"
-                        />
-                      </TableCell>
-                      <TableCell>{new Date(source.tested_at).toLocaleDateString()}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
-          </Paper>
-        </Grid>
-      </Grid>
-    </Container>
+  const safeWater = waterSources.filter(w => w.is_safe);
+  const contaminatedWater = waterSources.filter(w => !w.is_safe);
+
+  return (
+    <div style={{padding: '20px', color: 'white'}}>
+      <h1 style={{textAlign: 'center', marginBottom: '30px'}}>💧 Water Quality Management</h1>
+      
+      <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '20px', marginBottom: '30px'}}>
+        <div style={{background: 'rgba(46, 204, 113, 0.2)', borderRadius: '15px', padding: '20px', textAlign: 'center'}}>
+          <div style={{fontSize: '2rem', fontWeight: 'bold', color: '#27ae60'}}>{safeWater.length}</div>
+          <div>Safe Sources</div>
+        </div>
+        <div style={{background: 'rgba(231, 76, 60, 0.2)', borderRadius: '15px', padding: '20px', textAlign: 'center'}}>
+          <div style={{fontSize: '2rem', fontWeight: 'bold', color: '#e74c3c'}}>{contaminatedWater.length}</div>
+          <div>Contaminated Sources</div>
+        </div>
+        <div style={{background: 'rgba(52, 152, 219, 0.2)', borderRadius: '15px', padding: '20px', textAlign: 'center'}}>
+          <div style={{fontSize: '2rem', fontWeight: 'bold', color: '#3498db'}}>{waterSources.length}</div>
+          <div>Total Sources</div>
+        </div>
+      </div>
+
+      <div style={{
+        background: 'rgba(255,255,255,0.1)', 
+        borderRadius: '20px', 
+        padding: '20px'
+      }}>
+        <h3 style={{marginBottom: '20px'}}>Water Source Reports ({waterSources.length})</h3>
+        
+        {waterSources.length === 0 ? (
+          <div style={{textAlign: 'center', padding: '40px', color: 'rgba(255,255,255,0.7)'}}>
+            No water source reports available
+          </div>
+        ) : (
+          <div style={{display: 'grid', gap: '15px'}}>
+            {waterSources.map(source => (
+              <div key={source.id} style={{
+                background: 'rgba(255,255,255,0.1)',
+                borderRadius: '12px',
+                padding: '20px',
+                borderLeft: `4px solid ${source.is_safe ? '#2ecc71' : '#e74c3c'}`
+              }}>
+                <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start'}}>
+                  <div style={{flex: 1}}>
+                    <div style={{display: 'flex', gap: '15px', marginBottom: '10px'}}>
+                      <span style={{
+                        background: source.is_safe ? '#2ecc71' : '#e74c3c',
+                        color: 'white',
+                        padding: '4px 12px',
+                        borderRadius: '15px',
+                        fontSize: '12px',
+                        fontWeight: 'bold'
+                      }}>
+                        {source.is_safe ? '✅ SAFE' : '❌ CONTAMINATED'}
+                      </span>
+                      <span style={{
+                        background: 'rgba(255,255,255,0.2)',
+                        padding: '4px 12px',
+                        borderRadius: '15px',
+                        fontSize: '12px'
+                      }}>
+                        ID: {source.id}
+                      </span>
+                    </div>
+                    
+                    <h4 style={{margin: '10px 0', fontSize: '18px'}}>
+                      📍 {source.location}
+                    </h4>
+                    
+                    <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '15px', marginTop: '15px'}}>
+                      <div>
+                        <strong>🧪 pH Level:</strong><br/>
+                        <span style={{color: getPHColor(source.ph_level)}}>{source.ph_level}</span>
+                        <small style={{display: 'block', opacity: 0.7}}>(Safe: 6.5-8.5)</small>
+                      </div>
+                      <div>
+                        <strong>🌊 Turbidity:</strong><br/>
+                        <span style={{color: getTurbidityColor(source.turbidity)}}>{source.turbidity} NTU</span>
+                        <small style={{display: 'block', opacity: 0.7}}>(Safe: ≤5)</small>
+                      </div>
+                      <div>
+                        <strong>🦠 Bacteria:</strong><br/>
+                        <span style={{color: getBacteriaColor(source.bacterial_count)}}>{source.bacterial_count} CFU/ml</span>
+                        <small style={{display: 'block', opacity: 0.7}}>(Safe: ≤10)</small>
+                      </div>
+                      <div>
+                        <strong>🌡️ Temperature:</strong><br/>
+                        {source.temperature}°C
+                      </div>
+                      <div>
+                        <strong>💧 Source Type:</strong><br/>
+                        {source.source_type?.toUpperCase()}
+                      </div>
+                      <div>
+                        <strong>📅 Tested:</strong><br/>
+                        {new Date(source.tested_at).toLocaleDateString()}
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div style={{marginLeft: '20px'}}>
+                    <button
+                      onClick={() => deleteWaterSource(source.id)}
+                      style={{
+                        background: 'linear-gradient(45deg, #e74c3c, #c0392b)',
+                        color: 'white',
+                        border: 'none',
+                        padding: '8px 16px',
+                        borderRadius: '8px',
+                        cursor: 'pointer',
+                        fontSize: '12px',
+                        fontWeight: 'bold'
+                      }}
+                    >
+                      🗑️ Delete
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
   );
-}
+};
+
+const getPHColor = (ph) => {
+  if (ph >= 6.5 && ph <= 8.5) return '#2ecc71';
+  return '#e74c3c';
+};
+
+const getTurbidityColor = (turbidity) => {
+  if (turbidity <= 5) return '#2ecc71';
+  return '#e74c3c';
+};
+
+const getBacteriaColor = (count) => {
+  if (count <= 10) return '#2ecc71';
+  return '#e74c3c';
+};
 
 export default WaterQuality;

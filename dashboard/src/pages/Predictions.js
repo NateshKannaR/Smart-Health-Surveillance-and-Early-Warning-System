@@ -40,52 +40,67 @@ function Predictions() {
   const [riskScore, setRiskScore] = useState(0);
 
   useEffect(() => {
-    // Mock prediction data
-    const mockPredictions = [
-      {
-        id: 1,
-        disease: 'Cholera',
-        location: 'Village B',
-        riskScore: 85,
-        predictedCases: 12,
-        confidence: 92,
-        factors: ['High rainfall', 'Poor sanitation', 'Water contamination'],
-        timeframe: '7 days'
-      },
-      {
-        id: 2,
-        disease: 'Diarrhea',
-        location: 'Village A',
-        riskScore: 65,
-        predictedCases: 8,
-        confidence: 78,
-        factors: ['Seasonal pattern', 'Population density'],
-        timeframe: '14 days'
-      },
-      {
-        id: 3,
-        disease: 'Typhoid',
-        location: 'Village C',
-        riskScore: 45,
-        predictedCases: 5,
-        confidence: 85,
-        factors: ['Historical data', 'Water quality decline'],
-        timeframe: '21 days'
-      }
-    ];
-
-    const mockTrendData = [
-      { date: '2024-01-01', cholera: 2, diarrhea: 5, typhoid: 1 },
-      { date: '2024-01-08', cholera: 3, diarrhea: 7, typhoid: 2 },
-      { date: '2024-01-15', cholera: 5, diarrhea: 9, typhoid: 3 },
-      { date: '2024-01-22', cholera: 8, diarrhea: 12, typhoid: 4 },
-      { date: '2024-01-29', cholera: 12, diarrhea: 15, typhoid: 5 },
-    ];
-
-    setPredictions(mockPredictions);
-    setTrendData(mockTrendData);
-    setRiskScore(Math.max(...mockPredictions.map(p => p.riskScore)));
+    fetchPredictions();
+    fetchTrendData();
   }, []);
+
+  const fetchPredictions = async () => {
+    try {
+      const response = await fetch('http://localhost:8000/api/ai/predictions');
+      const data = await response.json();
+      
+      const formattedPredictions = data.map((pred, index) => ({
+        id: pred.id || index + 1,
+        disease: pred.disease || 'Unknown',
+        location: pred.location || 'Unknown',
+        riskScore: pred.riskScore || 0,
+        predictedCases: pred.predictedCases || 0,
+        confidence: pred.confidence || 0,
+        factors: pred.factors || [],
+        timeframe: pred.timeframe || '7-14 days'
+      }));
+      
+      setPredictions(formattedPredictions);
+      if (formattedPredictions.length > 0) {
+        setRiskScore(Math.max(...formattedPredictions.map(p => p.riskScore)));
+      }
+    } catch (error) {
+      console.error('Error fetching predictions:', error);
+      setPredictions([]);
+    }
+  };
+
+  const fetchTrendData = async () => {
+    try {
+      const response = await fetch('http://localhost:8000/api/health/reports');
+      const reports = await response.json();
+      
+      // Group reports by week and disease
+      const weeklyData = {};
+      reports.forEach(report => {
+        const date = new Date(report.reported_at);
+        const weekStart = new Date(date.setDate(date.getDate() - date.getDay()));
+        const weekKey = weekStart.toISOString().split('T')[0];
+        
+        if (!weeklyData[weekKey]) {
+          weeklyData[weekKey] = { date: weekKey, cholera: 0, diarrhea: 0, typhoid: 0, other: 0 };
+        }
+        
+        const disease = report.disease?.toLowerCase() || 'other';
+        if (weeklyData[weekKey][disease] !== undefined) {
+          weeklyData[weekKey][disease]++;
+        } else {
+          weeklyData[weekKey].other++;
+        }
+      });
+      
+      const trendArray = Object.values(weeklyData).sort((a, b) => new Date(a.date) - new Date(b.date));
+      setTrendData(trendArray.slice(-8)); // Last 8 weeks
+    } catch (error) {
+      console.error('Error fetching trend data:', error);
+      setTrendData([]);
+    }
+  };
 
   const getRiskColor = (score) => {
     if (score >= 80) return 'error';
@@ -159,10 +174,14 @@ function Predictions() {
         </Grid>
 
         <Grid item xs={12}>
-          <Alert severity="warning" sx={{ mb: 3 }}>
-            <Typography variant="h6">High Risk Alert</Typography>
-            Cholera outbreak predicted in Village B with 85% risk score. Immediate preventive measures recommended.
-          </Alert>
+          {predictions.some(p => p.riskScore >= 60) && (
+            <Alert severity="warning" sx={{ mb: 3 }}>
+              <Typography variant="h6">High Risk Alert</Typography>
+              {predictions.filter(p => p.riskScore >= 60).map(p => 
+                `${p.disease} outbreak predicted in ${p.location} with ${p.riskScore}% risk score. Immediate preventive measures recommended.`
+              ).join(' ')}
+            </Alert>
+          )}
         </Grid>
 
         <Grid item xs={12} md={8}>

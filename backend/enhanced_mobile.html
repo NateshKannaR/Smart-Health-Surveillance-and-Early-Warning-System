@@ -1,0 +1,959 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Health Surveillance System</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 10px;
+        }
+        .container { 
+            max-width: 400px; 
+            margin: 0 auto; 
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(20px);
+            border-radius: 20px; 
+            padding: 20px; 
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+        h1 { 
+            color: white; 
+            text-align: center; 
+            margin-bottom: 20px; 
+            font-size: 24px; 
+        }
+        .tabs { 
+            display: grid; 
+            grid-template-columns: repeat(3, 1fr);
+            gap: 5px;
+            margin-bottom: 20px;
+        }
+        .tab { 
+            padding: 10px 5px; 
+            background: rgba(255, 255, 255, 0.1);
+            border: none; 
+            cursor: pointer;
+            color: white;
+            font-size: 12px;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+        .tab.active { 
+            background: linear-gradient(45deg, #3498db, #2980b9);
+        }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .form-group { margin-bottom: 15px; }
+        label { 
+            display: block; 
+            margin-bottom: 5px; 
+            color: white;
+            font-size: 14px;
+        }
+        select, input, textarea { 
+            width: 100%; 
+            padding: 12px; 
+            border: none;
+            border-radius: 8px; 
+            font-size: 14px;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+        }
+        select option { background: #333; color: white; }
+        button { 
+            width: 100%; 
+            padding: 12px; 
+            background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+            color: white; 
+            border: none; 
+            cursor: pointer; 
+            margin-top: 10px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        .success { 
+            background: #2ecc71;
+            color: white; 
+            padding: 10px; 
+            border-radius: 8px; 
+            margin: 10px 0;
+        }
+        .error { 
+            background: #e74c3c;
+            color: white; 
+            padding: 10px; 
+            border-radius: 8px; 
+            margin: 10px 0;
+        }
+        .quick-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .quick-btn {
+            padding: 15px;
+            font-size: 12px;
+            text-align: center;
+        }
+        .status-card {
+            background: rgba(255,255,255,0.1);
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+        .education-item {
+            background: rgba(255,255,255,0.1);
+            padding: 12px;
+            margin-bottom: 8px;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+        .sensor-result {
+            background: rgba(255,255,255,0.1);
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🏥 Smart Health Surveillance</h1>
+        
+        <!-- Main Navigation -->
+        <div class="tabs">
+            <button class="tab active" onclick="showTab('health')">🏥 Health</button>
+            <button class="tab" onclick="showTab('water')">💧 Water</button>
+            <button class="tab" onclick="showTab('community')">👥 Community</button>
+            <button class="tab" onclick="showTab('education')">📚 Education</button>
+            <button class="tab" onclick="showTab('iot')">🔬 IoT Sensors</button>
+            <button class="tab" onclick="showTab('offline')">📱 Offline</button>
+        </div>
+
+        <!-- Health Reporting Tab -->
+        <div id="health" class="tab-content active">
+            <h3 style="color: white; margin-bottom: 15px;">🏥 Health Report</h3>
+            <form id="healthForm">
+                <div class="form-group">
+                    <label>Disease/Symptoms:</label>
+                    <select name="disease" required>
+                        <option value="">Select Disease</option>
+                        <option value="diarrhea">Diarrhea</option>
+                        <option value="cholera">Cholera</option>
+                        <option value="typhoid">Typhoid</option>
+                        <option value="hepatitis_a">Hepatitis A</option>
+                        <option value="dysentery">Dysentery</option>
+                        <option value="fever">Fever</option>
+                        <option value="vomiting">Vomiting</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Severity:</label>
+                    <select name="severity" required>
+                        <option value="">Select Severity</option>
+                        <option value="mild">Mild</option>
+                        <option value="moderate">Moderate</option>
+                        <option value="severe">Severe</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Location:</label>
+                    <input type="text" name="location" placeholder="Enter location" required>
+                </div>
+                <div class="form-group">
+                    <label>Patient Age:</label>
+                    <input type="number" name="patient_age" min="1" max="120" value="25">
+                </div>
+                <button type="submit">Submit Health Report</button>
+                <button type="button" onclick="startVoiceReport()" style="background: linear-gradient(45deg, #9b59b6, #8e44ad);">🎤 Voice Report</button>
+            </form>
+            <div id="voiceStatus" style="display: none; margin-top: 10px; padding: 10px; background: rgba(255,255,255,0.1); border-radius: 8px; color: white;"></div>
+        </div>
+
+        <!-- Water Quality Tab -->
+        <div id="water" class="tab-content">
+            <h3 style="color: white; margin-bottom: 15px;">💧 Water Quality Report</h3>
+            <form id="waterForm">
+                <div class="form-group">
+                    <label>Water Status:</label>
+                    <select name="is_safe" required>
+                        <option value="">Select Status</option>
+                        <option value="true">Safe</option>
+                        <option value="false">Contaminated</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>pH Level (6.5-8.5):</label>
+                    <input type="number" name="ph_level" step="0.1" min="0" max="14" placeholder="7.0" required>
+                </div>
+                <div class="form-group">
+                    <label>Turbidity (NTU):</label>
+                    <input type="number" name="turbidity" step="0.1" min="0" placeholder="1.0" required>
+                </div>
+                <div class="form-group">
+                    <label>Bacterial Count:</label>
+                    <input type="number" name="bacterial_count" min="0" placeholder="0" required>
+                </div>
+                <div class="form-group">
+                    <label>Temperature (°C):</label>
+                    <input type="number" name="temperature" step="0.1" placeholder="25.0" required>
+                </div>
+                <div class="form-group">
+                    <label>Location:</label>
+                    <input type="text" name="location" placeholder="Enter location" required>
+                </div>
+                <div class="form-group">
+                    <label>Source Type:</label>
+                    <select name="source_type" required>
+                        <option value="">Select Source</option>
+                        <option value="well">Well</option>
+                        <option value="river">River</option>
+                        <option value="pond">Pond</option>
+                        <option value="tap">Tap Water</option>
+                        <option value="borewell">Borewell</option>
+                    </select>
+                </div>
+                <button type="submit">Submit Water Report</button>
+            </form>
+        </div>
+
+        <!-- Community Reporting Tab -->
+        <div id="community" class="tab-content">
+            <h3 style="color: white; margin-bottom: 15px;">👥 Community Reporting</h3>
+            
+            <!-- Quick Report Buttons -->
+            <div class="quick-buttons">
+                <button class="quick-btn" onclick="quickReport('fever')" style="background: linear-gradient(45deg, #e74c3c, #c0392b);">🤒 Fever</button>
+                <button class="quick-btn" onclick="quickReport('diarrhea')" style="background: linear-gradient(45deg, #f39c12, #e67e22);">🤢 Diarrhea</button>
+                <button class="quick-btn" onclick="quickReport('vomiting')" style="background: linear-gradient(45deg, #9b59b6, #8e44ad);">🤮 Vomiting</button>
+                <button class="quick-btn" onclick="quickReport('jaundice')" style="background: linear-gradient(45deg, #f1c40f, #f39c12);">😷 Jaundice</button>
+            </div>
+            
+            <!-- Community Report Form -->
+            <form id="communityReportForm">
+                <div class="form-group">
+                    <label>Reporter Name:</label>
+                    <input type="text" id="reporterName" placeholder="Your name" required>
+                </div>
+                <div class="form-group">
+                    <label>Location:</label>
+                    <input type="text" id="reportLocation" placeholder="Village/Area name" required>
+                </div>
+                <div class="form-group">
+                    <label>Symptoms (Select all that apply):</label>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px;">
+                        <label style="display: flex; align-items: center; color: white; font-size: 12px;">
+                            <input type="checkbox" name="symptoms" value="fever" style="margin-right: 5px; width: auto;">
+                            Fever
+                        </label>
+                        <label style="display: flex; align-items: center; color: white; font-size: 12px;">
+                            <input type="checkbox" name="symptoms" value="diarrhea" style="margin-right: 5px; width: auto;">
+                            Diarrhea
+                        </label>
+                        <label style="display: flex; align-items: center; color: white; font-size: 12px;">
+                            <input type="checkbox" name="symptoms" value="vomiting" style="margin-right: 5px; width: auto;">
+                            Vomiting
+                        </label>
+                        <label style="display: flex; align-items: center; color: white; font-size: 12px;">
+                            <input type="checkbox" name="symptoms" value="headache" style="margin-right: 5px; width: auto;">
+                            Headache
+                        </label>
+                    </div>
+                </div>
+                <button type="button" onclick="submitCommunityReport()">Submit Community Report</button>
+            </form>
+            
+            <!-- Voice Recording -->
+            <div class="status-card">
+                <h4 style="color: white; margin-bottom: 10px;">🎤 Voice Report (For Illiterate Users)</h4>
+                <button type="button" id="voiceBtn" onclick="toggleVoiceRecording()" style="background: linear-gradient(45deg, #2ecc71, #27ae60);">🎤 Start Voice Recording</button>
+                <div id="communityVoiceStatus" style="color: white; margin-top: 10px; font-size: 12px;"></div>
+            </div>
+            
+            <!-- SMS Fallback -->
+            <div class="status-card">
+                <h4 style="color: white; margin-bottom: 10px;">📱 SMS Fallback (No Internet)</h4>
+                <p style="color: white; font-size: 12px; margin-bottom: 5px;">Send SMS to: <strong>+91-1234567890</strong></p>
+                <p style="color: white; font-size: 11px;">Format: HEALTH [SYMPTOM] [LOCATION] [AGE]</p>
+                <p style="color: white; font-size: 11px;">Example: HEALTH FEVER GUWAHATI 25</p>
+            </div>
+        </div>
+
+        <!-- Education Tab -->
+        <div id="education" class="tab-content">
+            <h3 style="color: white; margin-bottom: 15px;">📚 Health Education</h3>
+            
+            <!-- Language Selection -->
+            <div class="form-group">
+                <label>🌐 Select Language:</label>
+                <select id="languageSelect" onchange="changeLanguage()">
+                    <option value="en">English</option>
+                    <option value="hi">हिंदी (Hindi)</option>
+                    <option value="as">অসমীয়া (Assamese)</option>
+                    <option value="bn">বাংলা (Bengali)</option>
+                    <option value="ne">नेपाली (Nepali)</option>
+                </select>
+            </div>
+            
+            <!-- Education Content -->
+            <div id="educationContent" style="max-height: 300px; overflow-y: auto;">
+                <div class="education-item" onclick="loadTopicContent('water_safety', 'en')">
+                    <h4 style="color: white; margin: 0 0 5px 0;">💧 Water Safety</h4>
+                    <p style="color: rgba(255,255,255,0.8); margin: 0; font-size: 12px;">Learn how to ensure safe drinking water</p>
+                </div>
+                <div class="education-item" onclick="loadTopicContent('hygiene_practices', 'en')">
+                    <h4 style="color: white; margin: 0 0 5px 0;">🧼 Hygiene Practices</h4>
+                    <p style="color: rgba(255,255,255,0.8); margin: 0; font-size: 12px;">Personal hygiene and handwashing</p>
+                </div>
+                <div class="education-item" onclick="loadTopicContent('disease_prevention', 'en')">
+                    <h4 style="color: white; margin: 0 0 5px 0;">🛡️ Disease Prevention</h4>
+                    <p style="color: rgba(255,255,255,0.8); margin: 0; font-size: 12px;">How to prevent waterborne diseases</p>
+                </div>
+                <div class="education-item" onclick="loadTopicContent('emergency_contacts', 'en')">
+                    <h4 style="color: white; margin: 0 0 5px 0;">📞 Emergency Contacts</h4>
+                    <p style="color: rgba(255,255,255,0.8); margin: 0; font-size: 12px;">Important phone numbers and contacts</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- IoT Sensors Tab -->
+        <div id="iot" class="tab-content">
+            <h3 style="color: white; margin-bottom: 15px;">🔬 IoT Water Sensors</h3>
+            
+            <!-- Sensor Reading -->
+            <div class="form-group">
+                <label>Sensor ID:</label>
+                <input type="text" id="sensorId" placeholder="Enter sensor ID (e.g., SENSOR_001)">
+            </div>
+            <button onclick="checkWaterQuality()" style="background: linear-gradient(45deg, #3498db, #2980b9);">🔍 Check Water Quality</button>
+            <div id="waterQualityResult"></div>
+            
+            <!-- Register New Sensor -->
+            <div class="status-card">
+                <h4 style="color: white; margin-bottom: 10px;">📡 Register New Sensor</h4>
+                <div class="form-group">
+                    <input type="text" id="newSensorId" placeholder="New sensor ID">
+                </div>
+                <div class="form-group">
+                    <input type="text" id="newSensorLocation" placeholder="Sensor location">
+                </div>
+                <button onclick="registerSensor()" style="background: linear-gradient(45deg, #2ecc71, #27ae60);">📡 Register Sensor</button>
+            </div>
+            
+            <!-- Contaminated Sources Alert -->
+            <div class="status-card">
+                <h4 style="color: white; margin-bottom: 10px;">⚠️ Contaminated Sources</h4>
+                <button onclick="loadContaminatedSources()" style="background: linear-gradient(45deg, #e74c3c, #c0392b);">🔍 Check Contaminated Sources</button>
+                <div id="contaminatedSources" style="margin-top: 10px;"></div>
+            </div>
+        </div>
+
+        <!-- Offline Mode Tab -->
+        <div id="offline" class="tab-content">
+            <h3 style="color: white; margin-bottom: 15px;">📱 Offline Mode</h3>
+            
+            <!-- Connection Status -->
+            <div class="status-card">
+                <h4 style="color: white; margin-bottom: 10px;">🌐 Connection Status</h4>
+                <div id="connectionStatus" style="color: white; font-weight: bold;">Checking...</div>
+                <div id="lastSync" style="color: white; font-size: 12px; margin-top: 5px;"></div>
+            </div>
+            
+            <!-- Offline Data -->
+            <div class="status-card">
+                <h4 style="color: white; margin-bottom: 10px;">💾 Stored Offline Data</h4>
+                <div id="offlineStatus" style="color: white; font-size: 12px;"></div>
+                <button onclick="syncOfflineData()" style="background: linear-gradient(45deg, #3498db, #2980b9);">🔄 Sync Now</button>
+            </div>
+            
+            <!-- GPS Location -->
+            <div class="status-card">
+                <h4 style="color: white; margin-bottom: 10px;">📍 GPS Location</h4>
+                <div id="gpsLocation" style="color: white; font-size: 12px; margin-bottom: 10px;">Getting location...</div>
+                <button onclick="getGPSLocation()" style="background: linear-gradient(45deg, #2ecc71, #27ae60);">📍 Update Location</button>
+            </div>
+            
+            <!-- Outbreak Prediction -->
+            <div class="status-card">
+                <h4 style="color: white; margin-bottom: 10px;">🤖 AI Outbreak Prediction</h4>
+                <div class="form-group">
+                    <input type="text" id="predictionLocation" placeholder="Enter location for prediction">
+                </div>
+                <button onclick="getOutbreakPrediction()" style="background: linear-gradient(45deg, #9b59b6, #8e44ad);">🔮 Get Prediction</button>
+                <div id="predictionResult" style="margin-top: 10px;"></div>
+            </div>
+        </div>
+
+        <!-- Message Display -->
+        <div id="message"></div>
+        
+        <!-- Dashboard Stats -->
+        <div class="status-card" style="margin-top: 20px;">
+            <h4 style="color: white; margin-bottom: 10px;">📊 System Stats</h4>
+            <div style="color: white; font-size: 12px;">
+                <div>📋 Total Reports: <span id="total-reports">Loading...</span></div>
+                <div>🚨 Active Alerts: <span id="active-alerts">Loading...</span></div>
+                <div>💧 Water Sources: <span id="water-sources">Loading...</span></div>
+            </div>
+            <button onclick="loadDashboard()" style="background: linear-gradient(45deg, #34495e, #2c3e50);">🔄 Refresh Stats</button>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:8000/api';
+        let isRecording = false;
+        let mediaRecorder;
+
+        // Tab Management
+        function showTab(tabName) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            event.target.classList.add('active');
+            document.getElementById(tabName).classList.add('active');
+        }
+
+        // Message Display
+        function showMessage(text, type) {
+            const msg = document.getElementById('message');
+            msg.innerHTML = `<div class="${type}">${text}</div>`;
+            setTimeout(() => msg.innerHTML = '', 3000);
+        }
+
+        // Health Report Form
+        document.getElementById('healthForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            const data = Object.fromEntries(formData);
+            data.patient_age = parseInt(data.patient_age) || 25;
+            
+            try {
+                const response = await fetch(`${API_URL}/health/reports`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                
+                if (response.ok) {
+                    showMessage('✅ Health report submitted successfully!', 'success');
+                    e.target.reset();
+                } else {
+                    throw new Error('Server error');
+                }
+            } catch (error) {
+                showMessage('❌ Network error. Report stored offline.', 'error');
+                storeOfflineReport('health_report', data);
+            }
+        });
+
+        // Water Quality Form
+        document.getElementById('waterForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            const data = Object.fromEntries(formData);
+            data.is_safe = data.is_safe === 'true';
+            data.ph_level = parseFloat(data.ph_level);
+            data.turbidity = parseFloat(data.turbidity);
+            data.bacterial_count = parseInt(data.bacterial_count);
+            data.temperature = parseFloat(data.temperature);
+            
+            try {
+                const response = await fetch(`${API_URL}/water/sources`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                
+                if (response.ok) {
+                    showMessage('✅ Water quality report submitted successfully!', 'success');
+                    e.target.reset();
+                } else {
+                    throw new Error('Server error');
+                }
+            } catch (error) {
+                showMessage('❌ Network error. Report stored offline.', 'error');
+                storeOfflineReport('water_report', data);
+            }
+        });
+
+        // Voice Recording Functions
+        async function startVoiceReport() {
+            const voiceStatus = document.getElementById('voiceStatus');
+            
+            if (!isRecording) {
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    mediaRecorder = new MediaRecorder(stream);
+                    let audioChunks = [];
+                    
+                    mediaRecorder.ondataavailable = event => {
+                        audioChunks.push(event.data);
+                    };
+                    
+                    mediaRecorder.onstop = () => {
+                        const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+                        processVoiceReport(audioBlob);
+                    };
+                    
+                    mediaRecorder.start();
+                    isRecording = true;
+                    voiceStatus.style.display = 'block';
+                    voiceStatus.innerHTML = '🎙️ Recording... Speak your health report now';
+                } catch (error) {
+                    showMessage('❌ Voice recording not supported', 'error');
+                }
+            } else {
+                mediaRecorder.stop();
+                isRecording = false;
+                voiceStatus.innerHTML = '⏳ Processing voice report...';
+            }
+        }
+
+        function processVoiceReport(audioBlob) {
+            const voiceStatus = document.getElementById('voiceStatus');
+            
+            // Simulate speech-to-text processing
+            setTimeout(() => {
+                const mockTranscriptions = [
+                    { disease: 'diarrhea', severity: 'moderate', location: 'Village Center' },
+                    { disease: 'cholera', severity: 'severe', location: 'Water Source Area' },
+                    { disease: 'fever', severity: 'mild', location: 'Community Hall' }
+                ];
+                
+                const transcription = mockTranscriptions[Math.floor(Math.random() * mockTranscriptions.length)];
+                
+                // Auto-fill the form
+                document.querySelector('select[name="disease"]').value = transcription.disease;
+                document.querySelector('select[name="severity"]').value = transcription.severity;
+                document.querySelector('input[name="location"]').value = transcription.location;
+                
+                voiceStatus.innerHTML = `✅ Voice report processed: ${transcription.disease} (${transcription.severity}) at ${transcription.location}`;
+                
+                setTimeout(() => {
+                    voiceStatus.style.display = 'none';
+                }, 3000);
+            }, 2000);
+        }
+
+        // Community Reporting Functions
+        async function quickReport(symptom) {
+            const reportData = {
+                disease: symptom,
+                severity: 'mild',
+                location: localStorage.getItem('userLocation') || 'Community Report',
+                patient_age: 25,
+                patient_gender: 'unknown'
+            };
+            
+            try {
+                if (navigator.onLine) {
+                    const response = await fetch(`${API_URL}/health/reports`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(reportData)
+                    });
+                    
+                    if (response.ok) {
+                        showMessage(`✅ ${symptom} report submitted successfully!`, 'success');
+                    } else {
+                        throw new Error('Server error');
+                    }
+                } else {
+                    storeOfflineReport('health_report', reportData);
+                    showMessage(`✅ ${symptom} report saved offline. Will sync when online.`, 'success');
+                }
+            } catch (error) {
+                storeOfflineReport('health_report', reportData);
+                showMessage(`✅ ${symptom} report saved offline.`, 'success');
+            }
+        }
+
+        async function submitCommunityReport() {
+            const reporterName = document.getElementById('reporterName').value;
+            const location = document.getElementById('reportLocation').value;
+            const symptoms = Array.from(document.querySelectorAll('input[name="symptoms"]:checked')).map(cb => cb.value);
+            const language = document.getElementById('languageSelect').value;
+            
+            if (!reporterName || !location || symptoms.length === 0) {
+                showMessage('❌ Please fill all required fields', 'error');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_URL}/community/report`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        reporter_name: reporterName,
+                        location: location,
+                        symptoms: symptoms,
+                        language: language
+                    })
+                });
+                
+                const result = await response.json();
+                if (result.status === 'success') {
+                    showMessage('✅ Community report submitted successfully', 'success');
+                    document.getElementById('communityReportForm').reset();
+                } else {
+                    showMessage(`❌ ${result.message}`, 'error');
+                }
+            } catch (error) {
+                showMessage('❌ Network error. Report stored offline.', 'error');
+                storeOfflineReport('community_report', {
+                    reporter_name: reporterName,
+                    location: location,
+                    symptoms: symptoms,
+                    timestamp: new Date().toISOString()
+                });
+            }
+        }
+
+        function toggleVoiceRecording() {
+            const voiceBtn = document.getElementById('voiceBtn');
+            const voiceStatus = document.getElementById('communityVoiceStatus');
+            
+            if (!isRecording) {
+                voiceBtn.textContent = '🔴 Stop Recording';
+                voiceStatus.textContent = 'Recording... Speak now';
+                isRecording = true;
+                
+                // Simulate recording
+                setTimeout(() => {
+                    voiceBtn.textContent = '🎤 Start Voice Recording';
+                    voiceStatus.textContent = 'Voice report submitted successfully!';
+                    isRecording = false;
+                    quickReport('voice_report');
+                }, 3000);
+            }
+        }
+
+        // Education Functions
+        async function loadEducationalContent() {
+            const language = document.getElementById('languageSelect').value;
+            try {
+                const topics = await fetch(`${API_URL}/education/topics?language=${language}`).then(r => r.json());
+                const container = document.getElementById('educationContent');
+                
+                container.innerHTML = topics.map(topic => `
+                    <div class="education-item" onclick="loadTopicContent('${topic.key}', '${language}')">
+                        <h4 style="color: white; margin: 0 0 5px 0;">${topic.title}</h4>
+                        <p style="color: rgba(255,255,255,0.8); margin: 0; font-size: 12px;">${topic.preview}</p>
+                    </div>
+                `).join('');
+            } catch (error) {
+                console.error('Error loading educational content:', error);
+            }
+        }
+
+        async function loadTopicContent(topic, language) {
+            try {
+                const content = await fetch(`${API_URL}/education/content/${topic}?language=${language}`).then(r => r.json());
+                
+                if (content.error) {
+                    showMessage('❌ Content not available', 'error');
+                    return;
+                }
+                
+                const modal = document.createElement('div');
+                modal.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 1000; display: flex; align-items: center; justify-content: center; padding: 20px;';
+                
+                modal.innerHTML = `
+                    <div style="background: white; padding: 20px; border-radius: 12px; max-width: 90%; max-height: 80%; overflow-y: auto;">
+                        <h3 style="color: #2c3e50; margin-top: 0;">${content.title}</h3>
+                        <ul style="color: #34495e;">
+                            ${content.content.map(item => `<li style="margin: 10px 0;">${item}</li>`).join('')}
+                        </ul>
+                        <button onclick="this.parentElement.parentElement.remove()" 
+                                style="background: #e74c3c; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer;">Close</button>
+                    </div>
+                `;
+                
+                document.body.appendChild(modal);
+            } catch (error) {
+                showMessage('❌ Error loading content', 'error');
+            }
+        }
+
+        function changeLanguage() {
+            const language = document.getElementById('languageSelect').value;
+            localStorage.setItem('selectedLanguage', language);
+            loadEducationalContent();
+        }
+
+        // IoT Sensor Functions
+        async function checkWaterQuality() {
+            const sensorId = document.getElementById('sensorId').value;
+            if (!sensorId) {
+                showMessage('❌ Please enter sensor ID', 'error');
+                return;
+            }
+            
+            try {
+                const reading = await fetch(`${API_URL}/iot/sensors/${sensorId}/reading`).then(r => r.json());
+                
+                if (reading.error) {
+                    showMessage(`❌ ${reading.error}`, 'error');
+                    return;
+                }
+                
+                const status = reading.is_contaminated ? '🔴 CONTAMINATED' : '🟢 SAFE';
+                const statusColor = reading.is_contaminated ? '#e74c3c' : '#27ae60';
+                
+                document.getElementById('waterQualityResult').innerHTML = `
+                    <div class="sensor-result">
+                        <h4 style="color: ${statusColor}; margin: 0 0 10px 0;">${status}</h4>
+                        <div style="color: white; font-size: 12px;">
+                            <p>📊 pH Level: ${reading.ph_level}</p>
+                            <p>🌊 Turbidity: ${reading.turbidity} NTU</p>
+                            <p>🦠 Bacterial Count: ${reading.bacterial_count}</p>
+                            <p>🌡️ Temperature: ${reading.temperature}°C</p>
+                            <p>💧 Chlorine: ${reading.chlorine_level} mg/L</p>
+                        </div>
+                    </div>
+                `;
+                
+                if (reading.is_contaminated) {
+                    showMessage('⚠️ Water source contaminated! Avoid consumption.', 'error');
+                }
+            } catch (error) {
+                showMessage('❌ Error checking water quality', 'error');
+            }
+        }
+
+        async function registerSensor() {
+            const sensorId = document.getElementById('newSensorId').value;
+            const location = document.getElementById('newSensorLocation').value;
+            
+            if (!sensorId || !location) {
+                showMessage('❌ Please fill all fields', 'error');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_URL}/iot/sensors/register?sensor_id=${sensorId}&location=${encodeURIComponent(location)}`, {
+                    method: 'POST'
+                });
+                
+                const result = await response.json();
+                if (result.status === 'registered') {
+                    showMessage('✅ Sensor registered successfully!', 'success');
+                    document.getElementById('newSensorId').value = '';
+                    document.getElementById('newSensorLocation').value = '';
+                } else {
+                    showMessage('❌ Failed to register sensor', 'error');
+                }
+            } catch (error) {
+                showMessage('❌ Error registering sensor', 'error');
+            }
+        }
+
+        async function loadContaminatedSources() {
+            try {
+                const sources = await fetch(`${API_URL}/iot/contaminated-sources`).then(r => r.json());
+                const container = document.getElementById('contaminatedSources');
+                
+                if (sources.length === 0) {
+                    container.innerHTML = '<p style="color: white; font-size: 12px;">✅ No contaminated sources detected</p>';
+                } else {
+                    container.innerHTML = sources.map(source => `
+                        <div style="background: rgba(231, 76, 60, 0.2); padding: 10px; border-radius: 6px; margin: 5px 0;">
+                            <div style="color: white; font-size: 12px; font-weight: bold;">📍 ${source.location}</div>
+                            <div style="color: white; font-size: 11px;">Sensor: ${source.sensor_id}</div>
+                        </div>
+                    `).join('');
+                }
+            } catch (error) {
+                document.getElementById('contaminatedSources').innerHTML = '<p style="color: white; font-size: 12px;">❌ Error loading data</p>';
+            }
+        }
+
+        // Offline Functions
+        async function storeOfflineReport(type, data) {
+            try {
+                const offlineData = JSON.parse(localStorage.getItem('offlineReports') || '[]');
+                offlineData.push({
+                    id: Date.now(),
+                    type: type,
+                    data: data,
+                    timestamp: new Date().toISOString()
+                });
+                localStorage.setItem('offlineReports', JSON.stringify(offlineData));
+                updateOfflineStatus();
+            } catch (error) {
+                console.error('Error storing offline data:', error);
+            }
+        }
+
+        async function syncOfflineData() {
+            try {
+                const offlineData = JSON.parse(localStorage.getItem('offlineReports') || '[]');
+                if (offlineData.length === 0) {
+                    showMessage('📱 No offline data to sync', 'success');
+                    return;
+                }
+                
+                let syncedCount = 0;
+                for (const report of offlineData) {
+                    try {
+                        await fetch(`${API_URL}/offline/store`, {
+                            method: 'POST',
+                            headers: {'Content-Type': 'application/json'},
+                            body: JSON.stringify({
+                                report_type: report.type,
+                                data: report.data
+                            })
+                        });
+                        syncedCount++;
+                    } catch (error) {
+                        console.error('Sync error:', error);
+                    }
+                }
+                
+                if (syncedCount > 0) {
+                    localStorage.removeItem('offlineReports');
+                    showMessage(`✅ Synced ${syncedCount} offline reports`, 'success');
+                    updateOfflineStatus();
+                }
+            } catch (error) {
+                showMessage('❌ Sync failed', 'error');
+            }
+        }
+
+        function updateOfflineStatus() {
+            const offlineData = JSON.parse(localStorage.getItem('offlineReports') || '[]');
+            const statusElement = document.getElementById('offlineStatus');
+            if (statusElement) {
+                statusElement.textContent = offlineData.length > 0 ? `${offlineData.length} reports pending sync` : 'All data synced';
+            }
+        }
+
+        function updateConnectionStatus() {
+            const statusElement = document.getElementById('connectionStatus');
+            if (statusElement) {
+                statusElement.textContent = navigator.onLine ? '🌐 Online' : '📱 Offline';
+                statusElement.style.color = navigator.onLine ? '#27ae60' : '#e74c3c';
+            }
+        }
+
+        function getGPSLocation() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        const lat = position.coords.latitude.toFixed(6);
+                        const lng = position.coords.longitude.toFixed(6);
+                        const location = `${lat}, ${lng}`;
+                        
+                        localStorage.setItem('userLocation', location);
+                        document.getElementById('gpsLocation').textContent = `Location: ${location}`;
+                        
+                        // Auto-fill location in forms
+                        const locationInputs = document.querySelectorAll('input[name="location"]');
+                        locationInputs.forEach(input => {
+                            if (!input.value) input.value = location;
+                        });
+                    },
+                    (error) => {
+                        document.getElementById('gpsLocation').textContent = 'Location access denied';
+                    }
+                );
+            } else {
+                document.getElementById('gpsLocation').textContent = 'GPS not supported';
+            }
+        }
+
+        async function getOutbreakPrediction() {
+            const location = document.getElementById('predictionLocation').value;
+            if (!location) {
+                showMessage('❌ Please enter location', 'error');
+                return;
+            }
+            
+            try {
+                const prediction = await fetch(`${API_URL}/ml/outbreak-prediction/${encodeURIComponent(location)}`).then(r => r.json());
+                
+                if (prediction.error) {
+                    showMessage('❌ Error getting prediction', 'error');
+                    return;
+                }
+                
+                const riskLevel = prediction.prediction.risk_score > 0.7 ? 'HIGH' : prediction.prediction.risk_score > 0.4 ? 'MEDIUM' : 'LOW';
+                const riskColor = riskLevel === 'HIGH' ? '#e74c3c' : riskLevel === 'MEDIUM' ? '#f39c12' : '#2ecc71';
+                
+                document.getElementById('predictionResult').innerHTML = `
+                    <div class="sensor-result">
+                        <h4 style="color: ${riskColor}; margin: 0 0 10px 0;">Risk Level: ${riskLevel}</h4>
+                        <div style="color: white; font-size: 12px;">
+                            <p>🦠 Disease: ${prediction.prediction.disease}</p>
+                            <p>📊 Risk Score: ${(prediction.prediction.risk_score * 100).toFixed(1)}%</p>
+                            <p>📈 Predicted Cases: ${prediction.prediction.predicted_cases}</p>
+                            <p>🎯 Confidence: ${(prediction.prediction.confidence * 100).toFixed(1)}%</p>
+                        </div>
+                    </div>
+                `;
+            } catch (error) {
+                showMessage('❌ Error getting prediction', 'error');
+            }
+        }
+
+        // Dashboard Functions
+        async function loadDashboard() {
+            try {
+                const [healthStats, alertStats, waterStats] = await Promise.all([
+                    fetch(`${API_URL}/health/reports/stats`).then(r => r.json()),
+                    fetch(`${API_URL}/alerts/stats`).then(r => r.json()),
+                    fetch(`${API_URL}/water/reports/stats`).then(r => r.json())
+                ]);
+                
+                document.getElementById('total-reports').textContent = healthStats.total_reports || 0;
+                document.getElementById('active-alerts').textContent = alertStats.total_active_alerts || 0;
+                document.getElementById('water-sources').textContent = waterStats.total_sources || 0;
+            } catch (error) {
+                document.getElementById('total-reports').textContent = 'Error';
+                document.getElementById('active-alerts').textContent = 'Error';
+                document.getElementById('water-sources').textContent = 'Error';
+            }
+        }
+
+        // Initialize App
+        window.onload = function() {
+            loadDashboard();
+            loadEducationalContent();
+            updateOfflineStatus();
+            updateConnectionStatus();
+            getGPSLocation();
+            
+            // Load saved language
+            const savedLanguage = localStorage.getItem('selectedLanguage');
+            if (savedLanguage) {
+                document.getElementById('languageSelect').value = savedLanguage;
+            }
+        };
+
+        // Auto-refresh and offline support
+        setInterval(() => {
+            if (navigator.onLine) {
+                loadDashboard();
+            }
+            updateConnectionStatus();
+        }, 30000);
+
+        window.addEventListener('online', () => {
+            showMessage('🌐 Back online! Syncing data...', 'success');
+            updateConnectionStatus();
+            syncOfflineData();
+        });
+
+        window.addEventListener('offline', () => {
+            showMessage('📱 Working offline. Data will sync when connected.', 'error');
+            updateConnectionStatus();
+        });
+    </script>
+</body>
+</html>

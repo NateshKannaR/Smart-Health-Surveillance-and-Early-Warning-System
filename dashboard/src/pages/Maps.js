@@ -1,372 +1,357 @@
 import React, { useState, useEffect } from 'react';
-import {
-  Container,
-  Grid,
-  Paper,
-  Typography,
-  Card,
-  CardContent,
-  Box,
-  Chip,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemIcon,
-  ToggleButton,
-  ToggleButtonGroup
-} from '@mui/material';
-import {
-  LocationOn,
-  WaterDrop,
-  LocalHospital,
-  Warning,
-  Layers
-} from '@mui/icons-material';
 
-function Maps() {
-  const [mapLayer, setMapLayer] = useState('health');
-  const [locations, setLocations] = useState([]);
+const Maps = () => {
+  const [data, setData] = useState({ health: [], water: [], alerts: [] });
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Mock location data
-    const mockLocations = [
-      {
-        id: 1,
-        name: 'Village A',
-        type: 'village',
-        lat: 12.345,
-        lng: 67.890,
-        healthReports: 15,
-        waterSources: 3,
-        alerts: 1,
-        status: 'safe'
-      },
-      {
-        id: 2,
-        name: 'Village B',
-        type: 'village',
-        lat: 12.355,
-        lng: 67.895,
-        healthReports: 28,
-        waterSources: 2,
-        alerts: 3,
-        status: 'high_risk'
-      },
-      {
-        id: 3,
-        name: 'Health Center 1',
-        type: 'health_facility',
-        lat: 12.350,
-        lng: 67.892,
-        capacity: 50,
-        staff: 8,
-        supplies: 'adequate'
-      },
-      {
-        id: 4,
-        name: 'Water Source A',
-        type: 'water_source',
-        lat: 12.348,
-        lng: 67.888,
-        quality: 'safe',
-        ph: 7.2,
-        lastTested: '2024-01-15'
-      },
-      {
-        id: 5,
-        name: 'Water Source B',
-        type: 'water_source',
-        lat: 12.352,
-        lng: 67.897,
-        quality: 'contaminated',
-        ph: 5.8,
-        lastTested: '2024-01-14'
-      }
-    ];
-    
-    setLocations(mockLocations);
+    fetchData();
+    const interval = setInterval(fetchData, 5000);
+    return () => clearInterval(interval);
   }, []);
 
-  const handleLayerChange = (event, newLayer) => {
-    if (newLayer !== null) {
-      setMapLayer(newLayer);
+  const fetchData = async () => {
+    try {
+      const [healthRes, waterRes, alertsRes] = await Promise.all([
+        fetch('http://localhost:8000/api/health/reports'),
+        fetch('http://localhost:8000/api/water/sources'),
+        fetch('http://localhost:8000/api/alerts')
+      ]);
+
+      setData({
+        health: healthRes.ok ? await healthRes.json() : [],
+        water: waterRes.ok ? await waterRes.json() : [],
+        alerts: alertsRes.ok ? await alertsRes.json() : []
+      });
+    } catch (error) {
+      console.error('Error:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'safe': return 'success';
-      case 'moderate_risk': return 'warning';
-      case 'high_risk': return 'error';
-      case 'contaminated': return 'error';
-      case 'adequate': return 'success';
-      default: return 'default';
+  // Get location coordinates
+  const getLocationCoords = (location) => {
+    const coords = {
+      'Guwahati': { lat: 26.1445, lng: 91.7362 },
+      'Assam': { lat: 26.2006, lng: 92.9376 },
+      'Shillong': { lat: 25.5788, lng: 91.8933 },
+      'Meghalaya': { lat: 25.4670, lng: 91.3662 },
+      'Imphal': { lat: 24.8170, lng: 93.9368 },
+      'Manipur': { lat: 24.6637, lng: 93.9063 },
+      'Aizawl': { lat: 23.7307, lng: 92.7173 },
+      'Mizoram': { lat: 23.1645, lng: 92.9376 },
+      'Kohima': { lat: 25.6751, lng: 94.1086 },
+      'Nagaland': { lat: 26.1584, lng: 94.5624 },
+      'Agartala': { lat: 23.8315, lng: 91.2868 },
+      'Tripura': { lat: 23.9408, lng: 91.9882 },
+      'Itanagar': { lat: 27.0844, lng: 93.6053 },
+      'Arunachal Pradesh': { lat: 28.2180, lng: 94.7278 },
+      'Coimbatore': { lat: 11.0168, lng: 76.9558 },
+      'Delhi': { lat: 28.6139, lng: 77.2090 },
+      'Mumbai': { lat: 19.0760, lng: 72.8777 },
+      'TestCity': { lat: 26.9124, lng: 75.7873 }
+    };
+    
+    for (let place in coords) {
+      if (location && location.toLowerCase().includes(place.toLowerCase())) {
+        return coords[place];
+      }
+    }
+    return null;
+  };
+
+  // Get severity level for location
+  const getLocationSeverity = (location) => {
+    const healthCount = data.health.filter(h => h.location && h.location.toLowerCase().includes(location.toLowerCase())).length;
+    const severeHealth = data.health.filter(h => h.location && h.location.toLowerCase().includes(location.toLowerCase()) && h.severity === 'severe').length;
+    const waterIssues = data.water.filter(w => w.location && w.location.toLowerCase().includes(location.toLowerCase()) && !w.is_safe).length;
+    const alerts = data.alerts.filter(a => a.location && a.location.toLowerCase().includes(location.toLowerCase())).length;
+    
+    const totalIssues = healthCount + waterIssues + alerts + (severeHealth * 2);
+    
+    if (totalIssues >= 5) return 'critical';
+    if (totalIssues >= 3) return 'high';
+    if (totalIssues >= 1) return 'medium';
+    return 'low';
+  };
+
+  const getSeverityColor = (severity) => {
+    switch (severity) {
+      case 'critical': return '#FF0000';
+      case 'high': return '#FF6600';
+      case 'medium': return '#FFAA00';
+      case 'low': return '#00FF00';
+      default: return '#CCCCCC';
     }
   };
 
-  const getLocationIcon = (type) => {
-    switch (type) {
-      case 'village': return <LocationOn />;
-      case 'health_facility': return <LocalHospital />;
-      case 'water_source': return <WaterDrop />;
-      default: return <LocationOn />;
+  const getSeveritySize = (severity) => {
+    switch (severity) {
+      case 'critical': return '20px';
+      case 'high': return '16px';
+      case 'medium': return '12px';
+      case 'low': return '8px';
+      default: return '6px';
     }
   };
 
-  const filteredLocations = locations.filter(location => {
-    switch (mapLayer) {
-      case 'health': return location.type === 'village' || location.type === 'health_facility';
-      case 'water': return location.type === 'water_source';
-      case 'alerts': return location.alerts > 0;
-      default: return true;
-    }
-  });
+  // Get unique locations from data
+  const getUniqueLocations = () => {
+    const locations = new Set();
+    data.health.forEach(h => h.location && locations.add(h.location));
+    data.water.forEach(w => w.location && locations.add(w.location));
+    data.alerts.forEach(a => a.location && locations.add(a.location));
+    return Array.from(locations);
+  };
+
+  if (loading) return <div style={{color: 'white', textAlign: 'center', padding: '50px'}}>Loading real-time map...</div>;
+
+  const uniqueLocations = getUniqueLocations();
 
   return (
-    <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-      <Grid container spacing={3}>
-        <Grid item xs={12}>
-          <Typography variant="h4" gutterBottom sx={{ color: 'white', mb: 3 }}>
-            Geographic Health Mapping
-          </Typography>
-        </Grid>
+    <div style={{padding: '20px', color: 'white'}}>
+      <h1 style={{textAlign: 'center', marginBottom: '30px'}}>🗺️ Real-Time Health Surveillance Map</h1>
+      
+      <div style={{
+        background: 'rgba(255,255,255,0.1)', 
+        borderRadius: '20px', 
+        padding: '20px', 
+        marginBottom: '20px',
+        height: '500px',
+        position: 'relative'
+      }}>
+        <iframe
+          src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3610234.5234!2d90.3563!3d25.5788!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x375a5f3c5b9c7c7d%3A0x2b1c8b9c5b9c7c7d!2sNortheast%20India!5e0!3m2!1sen!2sin!4v1234567890"
+          width="100%"
+          height="100%"
+          style={{border: 0, borderRadius: '15px'}}
+          allowFullScreen=""
+          loading="lazy"
+          referrerPolicy="no-referrer-when-downgrade"
+        />
         
-        <Grid item xs={12}>
-          <Paper sx={{ p: 2, mb: 3 }}>
-            <Box display="flex" justifyContent="space-between" alignItems="center">
-              <Typography variant="h6">Map Layers</Typography>
-              <ToggleButtonGroup
-                value={mapLayer}
-                exclusive
-                onChange={handleLayerChange}
-                size="small"
-              >
-                <ToggleButton value="health">
-                  <LocalHospital sx={{ mr: 1 }} />
-                  Health
-                </ToggleButton>
-                <ToggleButton value="water">
-                  <WaterDrop sx={{ mr: 1 }} />
-                  Water
-                </ToggleButton>
-                <ToggleButton value="alerts">
-                  <Warning sx={{ mr: 1 }} />
-                  Alerts
-                </ToggleButton>
-                <ToggleButton value="all">
-                  <Layers sx={{ mr: 1 }} />
-                  All
-                </ToggleButton>
-              </ToggleButtonGroup>
-            </Box>
-          </Paper>
-        </Grid>
-
-        <Grid item xs={12} md={8}>
-          <Paper sx={{ p: 2, height: 600 }}>
-            <Typography variant="h6" gutterBottom>Interactive Map</Typography>
-            <Box
-              sx={{
-                height: '90%',
-                background: 'linear-gradient(45deg, #1a237e 30%, #3f51b5 90%)',
-                borderRadius: 2,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                position: 'relative',
-                overflow: 'hidden'
-              }}
-            >
-              {/* Simulated map with location markers */}
-              <Box
-                sx={{
+        {/* Dynamic location markers */}
+        <div style={{
+          position: 'absolute',
+          top: '20px',
+          left: '20px',
+          right: '20px',
+          bottom: '20px',
+          pointerEvents: 'none'
+        }}>
+          {uniqueLocations.map((location, i) => {
+            const coords = getLocationCoords(location);
+            if (!coords) return null;
+            
+            const severity = getLocationSeverity(location);
+            const healthCount = data.health.filter(h => h.location && h.location.toLowerCase().includes(location.toLowerCase())).length;
+            const waterIssues = data.water.filter(w => w.location && w.location.toLowerCase().includes(location.toLowerCase()) && !w.is_safe).length;
+            const alertCount = data.alerts.filter(a => a.location && a.location.toLowerCase().includes(location.toLowerCase())).length;
+            
+            // Calculate position on map (approximate)
+            const mapWidth = 460;
+            const mapHeight = 460;
+            const x = ((coords.lng - 88) / 10) * mapWidth;
+            const y = ((32 - coords.lat) / 10) * mapHeight;
+            
+            return (
+              <div key={location} style={{
+                position: 'absolute',
+                left: `${Math.max(0, Math.min(90, x / mapWidth * 100))}%`,
+                top: `${Math.max(0, Math.min(90, y / mapHeight * 100))}%`,
+                transform: 'translate(-50%, -50%)'
+              }}>
+                {/* Main location marker */}
+                <div style={{
+                  width: getSeveritySize(severity),
+                  height: getSeveritySize(severity),
+                  background: getSeverityColor(severity),
+                  borderRadius: '50%',
+                  animation: severity === 'critical' ? 'pulse 1s infinite' : severity === 'high' ? 'pulse 2s infinite' : 'none',
+                  boxShadow: `0 0 15px ${getSeverityColor(severity)}`,
+                  border: '2px solid white',
+                  cursor: 'pointer'
+                }} title={`${location}: H:${healthCount} W:${waterIssues} A:${alertCount}`} />
+                
+                {/* Location label */}
+                <div style={{
                   position: 'absolute',
-                  width: '100%',
-                  height: '100%',
-                  background: `
-                    radial-gradient(circle at 20% 30%, rgba(0, 230, 118, 0.3) 10%, transparent 10%),
-                    radial-gradient(circle at 80% 20%, rgba(255, 64, 129, 0.3) 8%, transparent 8%),
-                    radial-gradient(circle at 40% 70%, rgba(33, 150, 243, 0.3) 12%, transparent 12%),
-                    radial-gradient(circle at 70% 80%, rgba(255, 193, 7, 0.3) 6%, transparent 6%),
-                    radial-gradient(circle at 60% 40%, rgba(76, 175, 80, 0.3) 9%, transparent 9%)
-                  `
-                }}
-              />
-              
-              {/* Location markers */}
-              {filteredLocations.map((location, index) => (
-                <Box
-                  key={location.id}
-                  sx={{
+                  top: '-25px',
+                  left: '50%',
+                  transform: 'translateX(-50%)',
+                  background: 'rgba(0,0,0,0.8)',
+                  color: 'white',
+                  padding: '2px 6px',
+                  borderRadius: '4px',
+                  fontSize: '10px',
+                  whiteSpace: 'nowrap',
+                  fontWeight: 'bold'
+                }}>
+                  {location.split(',')[0]}
+                </div>
+                
+                {/* Health indicator */}
+                {healthCount > 0 && (
+                  <div style={{
                     position: 'absolute',
-                    left: `${20 + (index * 15)}%`,
-                    top: `${30 + (index * 10)}%`,
-                    transform: 'translate(-50%, -50%)',
-                    zIndex: 10
-                  }}
-                >
-                  <Chip
-                    icon={getLocationIcon(location.type)}
-                    label={location.name}
-                    color={getStatusColor(location.status || location.quality || 'default')}
-                    variant="filled"
-                    sx={{ 
-                      fontSize: '0.75rem',
-                      '& .MuiChip-icon': { fontSize: '1rem' }
-                    }}
-                  />
-                </Box>
-              ))}
-              
-              <Typography variant="h6" color="white" sx={{ opacity: 0.7 }}>
-                Interactive Map View
-              </Typography>
-            </Box>
-          </Paper>
-        </Grid>
+                    top: '-8px',
+                    right: '-8px',
+                    width: '8px',
+                    height: '8px',
+                    background: '#FF4444',
+                    borderRadius: '50%',
+                    animation: 'pulse 2s infinite'
+                  }} />
+                )}
+                
+                {/* Water indicator */}
+                {waterIssues > 0 && (
+                  <div style={{
+                    position: 'absolute',
+                    bottom: '-8px',
+                    right: '-8px',
+                    width: '8px',
+                    height: '8px',
+                    background: '#4444FF',
+                    borderRadius: '50%',
+                    animation: 'pulse 2s infinite 0.5s'
+                  }} />
+                )}
+                
+                {/* Alert indicator */}
+                {alertCount > 0 && (
+                  <div style={{
+                    position: 'absolute',
+                    bottom: '-8px',
+                    left: '-8px',
+                    width: '8px',
+                    height: '8px',
+                    background: '#FFA500',
+                    borderRadius: '50%',
+                    animation: 'pulse 1s infinite'
+                  }} />
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
 
-        <Grid item xs={12} md={4}>
-          <Paper sx={{ p: 2, height: 600, overflow: 'auto' }}>
-            <Typography variant="h6" gutterBottom>Location Details</Typography>
-            <List>
-              {filteredLocations.map((location) => (
-                <ListItem
-                  key={location.id}
-                  sx={{
-                    mb: 1,
-                    border: '1px solid rgba(255,255,255,0.1)',
-                    borderRadius: 1,
-                    backgroundColor: 'rgba(255,255,255,0.05)'
-                  }}
-                >
-                  <ListItemIcon>
-                    {getLocationIcon(location.type)}
-                  </ListItemIcon>
-                  <ListItemText
-                    primary={
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <span style={{ fontSize: '1rem', fontWeight: 500 }}>{location.name}</span>
-                        <Chip
-                          label={location.type.replace('_', ' ')}
-                          size="small"
-                          variant="outlined"
-                        />
-                      </div>
-                    }
-                    secondary={
-                      <div style={{ marginTop: 8 }}>
-                        {location.type === 'village' && (
-                          <>
-                            <div style={{ fontSize: '0.875rem', marginBottom: 4 }}>
-                              Health Reports: {location.healthReports}
-                            </div>
-                            <div style={{ fontSize: '0.875rem', marginBottom: 4 }}>
-                              Water Sources: {location.waterSources}
-                            </div>
-                            <div style={{ fontSize: '0.875rem', marginBottom: 4 }}>
-                              Active Alerts: {location.alerts}
-                            </div>
-                            <Chip
-                              label={location.status}
-                              color={getStatusColor(location.status)}
-                              size="small"
-                              sx={{ mt: 0.5 }}
-                            />
-                          </>
-                        )}
-                        {location.type === 'health_facility' && (
-                          <>
-                            <div style={{ fontSize: '0.875rem', marginBottom: 4 }}>
-                              Capacity: {location.capacity} beds
-                            </div>
-                            <div style={{ fontSize: '0.875rem', marginBottom: 4 }}>
-                              Staff: {location.staff} members
-                            </div>
-                            <Chip
-                              label={location.supplies}
-                              color={getStatusColor(location.supplies)}
-                              size="small"
-                              sx={{ mt: 0.5 }}
-                            />
-                          </>
-                        )}
-                        {location.type === 'water_source' && (
-                          <>
-                            <div style={{ fontSize: '0.875rem', marginBottom: 4 }}>
-                              pH Level: {location.ph}
-                            </div>
-                            <div style={{ fontSize: '0.875rem', marginBottom: 4 }}>
-                              Last Tested: {location.lastTested}
-                            </div>
-                            <Chip
-                              label={location.quality}
-                              color={getStatusColor(location.quality)}
-                              size="small"
-                              sx={{ mt: 0.5 }}
-                            />
-                          </>
-                        )}
-                        <div style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.7)', marginTop: 4 }}>
-                          Coordinates: {location.lat}, {location.lng}
-                        </div>
-                      </div>
-                    }
-                  />
-                </ListItem>
-              ))}
-            </List>
-          </Paper>
-        </Grid>
+      <style jsx>{`
+        @keyframes pulse {
+          0% { transform: scale(1); opacity: 1; }
+          50% { transform: scale(1.5); opacity: 0.7; }
+          100% { transform: scale(1); opacity: 1; }
+        }
+      `}</style>
 
-        <Grid item xs={12}>
-          <Grid container spacing={2}>
-            <Grid item xs={12} md={3}>
-              <Card>
-                <CardContent>
-                  <LocationOn sx={{ fontSize: 40, color: 'primary.main', mb: 2 }} />
-                  <Typography variant="h6">Total Locations</Typography>
-                  <Typography variant="h3" color="primary">{locations.length}</Typography>
-                </CardContent>
-              </Card>
-            </Grid>
-            <Grid item xs={12} md={3}>
-              <Card>
-                <CardContent>
-                  <LocalHospital sx={{ fontSize: 40, color: 'success.main', mb: 2 }} />
-                  <Typography variant="h6">Health Facilities</Typography>
-                  <Typography variant="h3" color="success.main">
-                    {locations.filter(l => l.type === 'health_facility').length}
-                  </Typography>
-                </CardContent>
-              </Card>
-            </Grid>
-            <Grid item xs={12} md={3}>
-              <Card>
-                <CardContent>
-                  <WaterDrop sx={{ fontSize: 40, color: 'info.main', mb: 2 }} />
-                  <Typography variant="h6">Water Sources</Typography>
-                  <Typography variant="h3" color="info.main">
-                    {locations.filter(l => l.type === 'water_source').length}
-                  </Typography>
-                </CardContent>
-              </Card>
-            </Grid>
-            <Grid item xs={12} md={3}>
-              <Card>
-                <CardContent>
-                  <Warning sx={{ fontSize: 40, color: 'error.main', mb: 2 }} />
-                  <Typography variant="h6">High Risk Areas</Typography>
-                  <Typography variant="h3" color="error.main">
-                    {locations.filter(l => l.status === 'high_risk' || l.quality === 'contaminated').length}
-                  </Typography>
-                </CardContent>
-              </Card>
-            </Grid>
-          </Grid>
-        </Grid>
-      </Grid>
-    </Container>
+      {/* Real-time stats */}
+      <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px'}}>
+        <div style={{background: 'rgba(255,255,255,0.1)', borderRadius: '15px', padding: '20px'}}>
+          <h3>🏥 Health Reports by Location</h3>
+          {uniqueLocations.map(location => {
+            const count = data.health.filter(h => h.location && h.location.toLowerCase().includes(location.toLowerCase())).length;
+            const severity = getLocationSeverity(location);
+            return count > 0 ? (
+              <div key={location} style={{
+                background: 'rgba(255,255,255,0.1)', 
+                margin: '10px 0', 
+                padding: '10px', 
+                borderRadius: '8px',
+                borderLeft: `4px solid ${getSeverityColor(severity)}`
+              }}>
+                <div><strong>{location}</strong> - {count} cases</div>
+                <div style={{fontSize: '12px', opacity: 0.8}}>
+                  Risk Level: {severity.toUpperCase()}
+                </div>
+              </div>
+            ) : null;
+          })}
+        </div>
+
+        <div style={{background: 'rgba(255,255,255,0.1)', borderRadius: '15px', padding: '20px'}}>
+          <h3>💧 Water Quality by Location</h3>
+          {uniqueLocations.map(location => {
+            const waterData = data.water.filter(w => w.location && w.location.toLowerCase().includes(location.toLowerCase()));
+            const contaminated = waterData.filter(w => !w.is_safe).length;
+            return waterData.length > 0 ? (
+              <div key={location} style={{
+                background: 'rgba(255,255,255,0.1)', 
+                margin: '10px 0', 
+                padding: '10px', 
+                borderRadius: '8px'
+              }}>
+                <div><strong>{location}</strong></div>
+                <div style={{fontSize: '12px', opacity: 0.8}}>
+                  {contaminated > 0 ? `❌ ${contaminated} contaminated` : '✅ All sources safe'}
+                </div>
+              </div>
+            ) : null;
+          })}
+        </div>
+
+        <div style={{background: 'rgba(255,255,255,0.1)', borderRadius: '15px', padding: '20px'}}>
+          <h3>🚨 Active Alerts by Location</h3>
+          {uniqueLocations.map(location => {
+            const alertData = data.alerts.filter(a => a.location && a.location.toLowerCase().includes(location.toLowerCase()));
+            return alertData.length > 0 ? (
+              <div key={location} style={{
+                background: 'rgba(255,255,255,0.1)', 
+                margin: '10px 0', 
+                padding: '10px', 
+                borderRadius: '8px'
+              }}>
+                <div><strong>{location}</strong> - {alertData.length} alerts</div>
+                <div style={{fontSize: '12px', opacity: 0.8}}>
+                  Latest: {alertData[0]?.severity}
+                </div>
+              </div>
+            ) : null;
+          })}
+        </div>
+      </div>
+
+      <div style={{
+        background: 'rgba(255,255,255,0.1)', 
+        borderRadius: '15px', 
+        padding: '20px', 
+        marginTop: '20px'
+      }}>
+        <h4>🎯 Live Map Legend</h4>
+        <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '15px', marginTop: '15px'}}>
+          <div style={{display: 'flex', alignItems: 'center', gap: '8px'}}>
+            <div style={{width: '20px', height: '20px', background: '#FF0000', borderRadius: '50%', border: '2px solid white'}}></div>
+            <span>Critical Risk Area</span>
+          </div>
+          <div style={{display: 'flex', alignItems: 'center', gap: '8px'}}>
+            <div style={{width: '16px', height: '16px', background: '#FF6600', borderRadius: '50%', border: '2px solid white'}}></div>
+            <span>High Risk Area</span>
+          </div>
+          <div style={{display: 'flex', alignItems: 'center', gap: '8px'}}>
+            <div style={{width: '12px', height: '12px', background: '#FFAA00', borderRadius: '50%', border: '2px solid white'}}></div>
+            <span>Medium Risk Area</span>
+          </div>
+          <div style={{display: 'flex', alignItems: 'center', gap: '8px'}}>
+            <div style={{width: '8px', height: '8px', background: '#00FF00', borderRadius: '50%', border: '2px solid white'}}></div>
+            <span>Low Risk Area</span>
+          </div>
+          <div style={{display: 'flex', alignItems: 'center', gap: '8px'}}>
+            <div style={{width: '8px', height: '8px', background: '#FF4444', borderRadius: '50%'}}></div>
+            <span>Health Reports</span>
+          </div>
+          <div style={{display: 'flex', alignItems: 'center', gap: '8px'}}>
+            <div style={{width: '8px', height: '8px', background: '#4444FF', borderRadius: '50%'}}></div>
+            <span>Water Issues</span>
+          </div>
+          <div style={{display: 'flex', alignItems: 'center', gap: '8px'}}>
+            <div style={{width: '8px', height: '8px', background: '#FFA500', borderRadius: '50%'}}></div>
+            <span>Active Alerts</span>
+          </div>
+        </div>
+      </div>
+    </div>
   );
-}
+};
 
 export default Maps;

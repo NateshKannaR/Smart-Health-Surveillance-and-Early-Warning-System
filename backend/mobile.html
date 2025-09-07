@@ -7,61 +7,75 @@
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { 
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
-            padding: 20px;
-            animation: gradientShift 10s ease infinite;
+            padding: 0;
+            overflow-x: hidden;
         }
-        @keyframes gradientShift {
-            0% { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
-            25% { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
-            50% { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
-            75% { background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); }
-            100% { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+        .app-header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            padding: 15px 20px;
+            box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        .app-header h1 {
+            color: #2c3e50;
+            font-size: 24px;
+            font-weight: 700;
+            text-align: center;
+            margin: 0;
         }
         .container { 
-            max-width: 400px; 
+            max-width: 420px; 
             margin: 0 auto; 
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: 20px; 
-            padding: 30px; 
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            background: white;
+            min-height: calc(100vh - 70px);
+            box-shadow: 0 0 30px rgba(0, 0, 0, 0.1);
         }
-        h1 { 
-            color: white; 
-            text-align: center; 
-            margin-bottom: 30px; 
-            font-size: 28px; 
-            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        .content-area {
+            padding: 20px;
         }
-        .form-group { margin-bottom: 20px; }
+        .form-group { 
+            margin-bottom: 20px; 
+        }
         label { 
             display: block; 
             margin-bottom: 8px; 
             font-weight: 600; 
-            color: white;
-            text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+            color: #2c3e50;
+            font-size: 14px;
         }
         select, input { 
             width: 100%; 
-            padding: 15px; 
-            border: none;
+            padding: 16px; 
+            border: 2px solid #e1e8ed;
             border-radius: 12px; 
             font-size: 16px;
-            background: rgba(255, 255, 255, 0.2);
-            color: white;
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.3);
+            background: #f8f9fa;
+            color: #2c3e50;
+            transition: all 0.3s ease;
         }
-        select::placeholder, input::placeholder { color: rgba(255, 255, 255, 0.7); }
-        select option { background: #333; color: white; }
+        select:focus, input:focus {
+            outline: none;
+            border-color: #3498db;
+            background: white;
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+        }
+        select::placeholder, input::placeholder { 
+            color: #95a5a6; 
+        }
+        select option { 
+            background: white; 
+            color: #2c3e50; 
+        }
         button { 
             width: 100%; 
-            padding: 15px; 
-            background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+            padding: 16px; 
+            background: linear-gradient(135deg, #3498db, #2980b9);
             color: white; 
             border: none; 
             cursor: pointer; 
@@ -70,85 +84,166 @@
             font-size: 16px;
             font-weight: 600;
             transition: all 0.3s ease;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            box-shadow: 0 4px 15px rgba(52, 152, 219, 0.3);
         }
         button:hover { 
             transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 8px 25px rgba(52, 152, 219, 0.4);
+        }
+        button:active {
+            transform: translateY(0);
         }
         .success { 
-            background: linear-gradient(45deg, #2ecc71, #27ae60);
+            background: linear-gradient(135deg, #27ae60, #2ecc71);
             color: white; 
-            padding: 15px; 
+            padding: 16px; 
             border-radius: 12px; 
             margin: 15px 0;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            box-shadow: 0 4px 15px rgba(39, 174, 96, 0.3);
         }
         .error { 
-            background: linear-gradient(45deg, #e74c3c, #c0392b);
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
             color: white; 
-            padding: 15px; 
+            padding: 16px; 
             border-radius: 12px; 
             margin: 15px 0;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            box-shadow: 0 4px 15px rgba(231, 76, 60, 0.3);
         }
-        .tabs { 
-            display: flex; 
-            margin-bottom: 25px;
-            border-radius: 12px;
-            overflow: hidden;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100%;
+            max-width: 420px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-top: 1px solid #e1e8ed;
+            display: flex;
+            padding: 8px 0;
+            z-index: 100;
         }
         .tab { 
             flex: 1; 
-            padding: 15px 10px; 
-            background: rgba(255, 255, 255, 0.1);
+            padding: 12px 8px; 
+            background: none;
             border: none; 
             cursor: pointer;
-            color: white;
-            font-weight: 600;
+            color: #95a5a6;
+            font-weight: 500;
+            font-size: 12px;
             transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            margin: 0;
+            box-shadow: none;
+        }
+        .tab-icon {
+            font-size: 20px;
+            margin-bottom: 2px;
         }
         .tab.active { 
-            background: linear-gradient(45deg, #3498db, #2980b9);
-            transform: scale(1.05);
+            color: #3498db;
+            background: none;
+            transform: none;
         }
-        .tab:hover { background: rgba(255, 255, 255, 0.2); }
-        .tab-content { display: none; }
-        .tab-content.active { display: block; }
+        .tab:hover { 
+            color: #2980b9;
+            background: none;
+            transform: none;
+        }
+        .tab-content { 
+            display: none; 
+            padding-bottom: 80px;
+        }
+        .tab-content.active { 
+            display: block; 
+        }
+        .card {
+            background: white;
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 16px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+            border: 1px solid #f1f3f4;
+        }
+        .card h3 {
+            color: #2c3e50;
+            margin-bottom: 12px;
+            font-size: 18px;
+            font-weight: 600;
+        }
+        .quick-actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        .quick-btn {
+            padding: 20px 16px;
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: 600;
+            text-align: center;
+            margin: 0;
+        }
+        .btn-fever { background: linear-gradient(135deg, #e74c3c, #c0392b); }
+        .btn-diarrhea { background: linear-gradient(135deg, #f39c12, #e67e22); }
+        .btn-vomiting { background: linear-gradient(135deg, #9b59b6, #8e44ad); }
+        .btn-jaundice { background: linear-gradient(135deg, #f1c40f, #f39c12); }
         .education-item {
-            background: rgba(255,255,255,0.1);
-            padding: 15px;
-            margin-bottom: 10px;
+            background: #f8f9fa;
+            padding: 16px;
+            margin-bottom: 12px;
             border-radius: 12px;
             cursor: pointer;
             transition: all 0.3s ease;
+            border: 1px solid #e1e8ed;
         }
         .education-item:hover {
-            background: rgba(255,255,255,0.2);
+            background: #e9ecef;
             transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
         }
-        .education-item h3 {
-            color: white;
-            margin-bottom: 5px;
+        .education-item h4 {
+            color: #2c3e50;
+            margin-bottom: 6px;
+            font-size: 16px;
+            font-weight: 600;
         }
         .education-item p {
-            color: rgba(255,255,255,0.8);
+            color: #6c757d;
             font-size: 14px;
+            margin: 0;
+        }
+        .status-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .status-online {
+            background: #d4edda;
+            color: #155724;
+        }
+        .status-offline {
+            background: #f8d7da;
+            color: #721c24;
         }
     </style>
 </head>
 <body>
+    <div class="app-header">
+        <h1>🏥 Health Surveillance</h1>
+    </div>
+    
     <div class="container">
-        <h1>Health Surveillance</h1>
-        
-        <div class="tabs">
-            <button class="tab active" onclick="showTab('health')">🏥 Health</button>
-            <button class="tab" onclick="showTab('water')">💧 Water</button>
-            <button class="tab" onclick="showTab('community')">👥 Community</button>
-            <button class="tab" onclick="showTab('education')">📚 Education</button>
-            <button class="tab" onclick="showTab('offline')">📱 Offline</button>
-        </div>
+        <div class="content-area">
 
         <div id="health" class="tab-content active">
             <form id="healthForm">
@@ -196,112 +291,147 @@
         </div>
 
         <div id="water" class="tab-content">
-            <form id="waterForm">
+            <!-- IoT Sensor Check -->
+            <div class="card">
+                <h3>🔬 IoT Sensor Check</h3>
                 <div class="form-group">
-                    <label>Water Safe:</label>
-                    <select name="is_safe" required>
-                        <option value="">Select Status</option>
-                        <option value="true">Safe</option>
-                        <option value="false">Contaminated</option>
-                    </select>
+                    <label>Sensor ID:</label>
+                    <input type="text" id="sensorId" placeholder="Enter sensor ID (e.g., WS001)">
                 </div>
-                <div class="form-group">
-                    <label>pH Level:</label>
-                    <input type="number" name="ph_level" step="0.1" min="0" max="14" placeholder="7.0" required>
-                </div>
-                <div class="form-group">
-                    <label>Turbidity:</label>
-                    <input type="number" name="turbidity" step="0.1" min="0" placeholder="5.0" required>
-                </div>
-                <div class="form-group">
-                    <label>Bacterial Count:</label>
-                    <input type="number" name="bacterial_count" min="0" placeholder="100" required>
-                </div>
-                <div class="form-group">
-                    <label>Temperature (°C):</label>
-                    <input type="number" name="temperature" step="0.1" placeholder="25.0" required>
-                </div>
-                <div class="form-group">
-                    <label>Location:</label>
-                    <input type="text" name="location" placeholder="Enter location" required>
-                </div>
-                <div class="form-group">
-                    <label>Source Type:</label>
-                    <select name="source_type" required>
-                        <option value="">Select Source</option>
-                        <option value="well">Well</option>
-                        <option value="river">River</option>
-                        <option value="pond">Pond</option>
-                        <option value="tap">Tap Water</option>
-                    </select>
-                </div>
-                <button type="submit">Submit Water Report</button>
-            </form>
+                <button onclick="checkWaterQuality()" style="background: linear-gradient(135deg, #3498db, #2980b9);">🔍 Check Water Quality</button>
+                <div id="waterQualityResult"></div>
+            </div>
+            
+            <!-- Manual Water Report -->
+            <div class="card">
+                <h3>📝 Manual Water Report</h3>
+                <form id="waterForm">
+                    <div class="form-group">
+                        <label>Water Safe:</label>
+                        <select name="is_safe" required>
+                            <option value="">Select Status</option>
+                            <option value="true">Safe</option>
+                            <option value="false">Contaminated</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>pH Level:</label>
+                        <input type="number" name="ph_level" step="0.1" min="0" max="14" placeholder="7.0" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Turbidity:</label>
+                        <input type="number" name="turbidity" step="0.1" min="0" placeholder="5.0" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Bacterial Count:</label>
+                        <input type="number" name="bacterial_count" min="0" placeholder="100" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Temperature (°C):</label>
+                        <input type="number" name="temperature" step="0.1" placeholder="25.0" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Location:</label>
+                        <input type="text" name="location" placeholder="Enter location" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Source Type:</label>
+                        <select name="source_type" required>
+                            <option value="">Select Source</option>
+                            <option value="well">Well</option>
+                            <option value="river">River</option>
+                            <option value="pond">Pond</option>
+                            <option value="tap">Tap Water</option>
+                        </select>
+                    </div>
+                    <button type="submit">Submit Water Report</button>
+                </form>
+            </div>
         </div>
 
         <!-- Community Reporting Tab -->
         <div id="community" class="tab-content">
-            <h2 style="color: white; text-align: center; margin-bottom: 20px;">👥 Community Reporting</h2>
-            
-            <!-- Quick Symptom Buttons -->
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px;">
-                <button type="button" onclick="quickReport('fever')" style="background: linear-gradient(45deg, #e74c3c, #c0392b); padding: 20px; font-size: 14px;">🤒 I have Fever</button>
-                <button type="button" onclick="quickReport('diarrhea')" style="background: linear-gradient(45deg, #f39c12, #e67e22); padding: 20px; font-size: 14px;">🤢 I have Diarrhea</button>
-                <button type="button" onclick="quickReport('vomiting')" style="background: linear-gradient(45deg, #9b59b6, #8e44ad); padding: 20px; font-size: 14px;">🤮 I have Vomiting</button>
-                <button type="button" onclick="quickReport('jaundice')" style="background: linear-gradient(45deg, #f1c40f, #f39c12); padding: 20px; font-size: 14px;">😷 I have Jaundice</button>
+            <div class="card">
+                <h3>👥 Community Reporting</h3>
+                
+                <!-- Quick Symptom Buttons -->
+                <div class="quick-actions">
+                    <button type="button" onclick="quickReport('fever')" class="quick-btn btn-fever">🤒 I have Fever</button>
+                    <button type="button" onclick="quickReport('diarrhea')" class="quick-btn btn-diarrhea">🤢 I have Diarrhea</button>
+                    <button type="button" onclick="quickReport('vomiting')" class="quick-btn btn-vomiting">🤮 I have Vomiting</button>
+                    <button type="button" onclick="quickReport('jaundice')" class="quick-btn btn-jaundice">😷 I have Jaundice</button>
+                </div>
             </div>
             
             <!-- Voice Recording -->
-            <div style="background: rgba(255,255,255,0.1); padding: 20px; border-radius: 12px; margin-bottom: 20px;">
-                <h3 style="color: white; margin-bottom: 15px;">🎤 Voice Report (For Illiterate Users)</h3>
-                <button type="button" id="voiceBtn" onclick="toggleVoiceRecording()" style="background: linear-gradient(45deg, #2ecc71, #27ae60);">🎤 Start Voice Recording</button>
-                <div id="voiceStatus" style="color: white; margin-top: 10px; font-size: 14px;"></div>
+            <div class="card">
+                <h3>🎤 Voice Report</h3>
+                <p style="color: #6c757d; margin-bottom: 15px; font-size: 14px;">For users who cannot read or write</p>
+                <button type="button" id="voiceBtn" onclick="toggleVoiceRecording()" style="background: linear-gradient(135deg, #27ae60, #2ecc71);">🎤 Start Voice Recording</button>
+                <div id="voiceStatus" style="color: #2c3e50; margin-top: 10px; font-size: 14px;"></div>
             </div>
             
-            <!-- SMS Fallback -->
-            <div style="background: rgba(255,255,255,0.1); padding: 20px; border-radius: 12px;">
-                <h3 style="color: white; margin-bottom: 15px;">📱 SMS Fallback (No Internet)</h3>
-                <p style="color: white; font-size: 14px; margin-bottom: 10px;">Send SMS to: <strong>+91-1234567890</strong></p>
-                <p style="color: white; font-size: 12px;">Format: HEALTH [SYMPTOM] [LOCATION] [AGE]</p>
-                <p style="color: white; font-size: 12px;">Example: HEALTH FEVER GUWAHATI 25</p>
+            <!-- SMS Data Collection -->
+            <div class="card">
+                <h3>📱 SMS Data Collection</h3>
+                <div class="form-group">
+                    <label>📞 Phone Numbers (comma separated):</label>
+                    <input type="text" id="smsPhoneNumbers" placeholder="+91-9876543210, +91-9876543211">
+                </div>
+                <div class="form-group">
+                    <label>📝 Message Template:</label>
+                    <select id="smsTemplate" onchange="updateSMSMessage()">
+                        <option value="health_survey">Health Survey</option>
+                        <option value="water_quality">Water Quality Check</option>
+                        <option value="symptom_report">Symptom Reporting</option>
+                    </select>
+                </div>
+                <button onclick="sendSMSDataRequest()" style="background: linear-gradient(135deg, #27ae60, #2ecc71);">📱 Send SMS Request</button>
+                <p style="color: #6c757d; font-size: 12px; margin-top: 10px;">SMS Fallback: Send to +91-1234567890<br>Format: HEALTH [SYMPTOM] [LOCATION] [AGE]</p>
             </div>
         </div>
         
         <!-- Education Tab -->
         <div id="education" class="tab-content">
-            <h2 style="color: white; text-align: center; margin-bottom: 20px;">📚 Health Education</h2>
-            
-            <!-- Language Selection -->
-            <div class="form-group">
-                <label>🌐 Select Language:</label>
-                <select id="languageSelect" onchange="changeLanguage()">
-                    <option value="en">English</option>
-                    <option value="hi">हिंदी (Hindi)</option>
-                    <option value="as">অসমীয়া (Assamese)</option>
-                    <option value="bn">বাংলা (Bengali)</option>
-                </select>
+            <div class="card">
+                <h3>📚 Health Education</h3>
+                
+                <!-- Language Selection -->
+                <div class="form-group">
+                    <label>🌐 Select Language:</label>
+                    <select id="languageSelect" onchange="changeLanguage()">
+                        <option value="en">English</option>
+                        <option value="hi">हिंदी (Hindi)</option>
+                        <option value="as">অসমীয়া (Assamese)</option>
+                        <option value="bn">বাংলা (Bengali)</option>
+                        <option value="ne">नेपाली (Nepali)</option>
+                        <option value="mni">মৈতৈলোন্ (Manipuri)</option>
+                        <option value="garo">A·chik (Garo)</option>
+                        <option value="khasi">Khasi</option>
+                    </select>
+                </div>
             </div>
             
             <!-- Education Content -->
-            <div style="max-height: 300px; overflow-y: auto;">
+            <div id="educationContent" style="max-height: 400px; overflow-y: auto;">
                 <div class="education-item" onclick="showEducationContent('handwashing')">
-                    <h3>🧼 Handwashing</h3>
+                    <h4>🧼 Handwashing</h4>
                     <p>Learn proper handwashing techniques</p>
                 </div>
                 <div class="education-item" onclick="showEducationContent('water')">
-                    <h3>💧 Safe Drinking Water</h3>
+                    <h4>💧 Safe Drinking Water</h4>
                     <p>How to ensure water safety</p>
                 </div>
                 <div class="education-item" onclick="showEducationContent('food')">
-                    <h3>🍽️ Food Hygiene</h3>
+                    <h4>🍽️ Food Hygiene</h4>
                     <p>Safe food preparation and storage</p>
                 </div>
                 <div class="education-item" onclick="showEducationContent('ors')">
-                    <h3>🥤 ORS Preparation</h3>
+                    <h4>🥤 ORS Preparation</h4>
                     <p>How to prepare Oral Rehydration Solution</p>
                 </div>
                 <div class="education-item" onclick="showEducationContent('monsoon')">
-                    <h3>🌧️ Monsoon Tips</h3>
+                    <h4>🌧️ Monsoon Tips</h4>
                     <p>Seasonal health precautions</p>
                 </div>
             </div>
@@ -309,53 +439,50 @@
         
         <!-- Offline Mode Tab -->
         <div id="offline" class="tab-content">
-            <h2 style="color: white; text-align: center; margin-bottom: 20px;">📱 Offline Mode</h2>
-            
             <!-- Connection Status -->
-            <div style="background: rgba(255,255,255,0.1); padding: 20px; border-radius: 12px; margin-bottom: 20px;">
-                <h3 style="color: white; margin-bottom: 10px;">🌐 Connection Status</h3>
-                <div id="connectionStatus" style="color: white; font-weight: bold;">Checking...</div>
-                <div id="lastSync" style="color: white; font-size: 14px; margin-top: 5px;"></div>
+            <div class="card">
+                <h3>🌐 Connection Status</h3>
+                <div id="connectionStatus" class="status-indicator status-online">Checking...</div>
+                <div id="lastSync" style="color: #6c757d; font-size: 14px; margin-top: 10px;"></div>
             </div>
             
             <!-- Offline Data -->
-            <div style="background: rgba(255,255,255,0.1); padding: 20px; border-radius: 12px; margin-bottom: 20px;">
-                <h3 style="color: white; margin-bottom: 10px;">💾 Stored Offline Data</h3>
-                <div id="offlineStats" style="color: white; font-size: 14px;"></div>
-                <button onclick="syncOfflineData()" style="background: linear-gradient(45deg, #3498db, #2980b9); margin-top: 10px;">🔄 Sync Now</button>
+            <div class="card">
+                <h3>💾 Stored Offline Data</h3>
+                <div id="offlineStats" style="color: #2c3e50; font-size: 14px; margin-bottom: 15px;"></div>
+                <div id="offlineStatus" style="color: #6c757d; font-size: 12px; margin-bottom: 15px;"></div>
+                <button onclick="syncOfflineData()" style="background: linear-gradient(135deg, #3498db, #2980b9);">🔄 Sync Now</button>
             </div>
             
             <!-- GPS Location -->
-            <div style="background: rgba(255,255,255,0.1); padding: 20px; border-radius: 12px;">
-                <h3 style="color: white; margin-bottom: 10px;">📍 GPS Location</h3>
-                <div id="gpsLocation" style="color: white; font-size: 14px; margin-bottom: 10px;">Getting location...</div>
-                <button onclick="getGPSLocation()" style="background: linear-gradient(45deg, #2ecc71, #27ae60);">📍 Update Location</button>
+            <div class="card">
+                <h3>📍 GPS Location</h3>
+                <div id="gpsLocation" style="color: #6c757d; font-size: 14px; margin-bottom: 15px;">Getting location...</div>
+                <button onclick="getGPSLocation()" style="background: linear-gradient(135deg, #27ae60, #2ecc71);">📍 Update Location</button>
             </div>
         </div>
         
         <div id="alert" class="tab-content">
-            <h2 style="color: white; text-align: center; margin-bottom: 20px;">🚨 Alerts & Notifications</h2>
-            
             <!-- Push Notifications -->
-            <div style="background: rgba(255,255,255,0.1); padding: 20px; border-radius: 12px; margin-bottom: 20px;">
-                <h3 style="color: white; margin-bottom: 15px;">🔔 Enable Notifications</h3>
-                <button onclick="enableNotifications()" style="background: linear-gradient(45deg, #e74c3c, #c0392b);">🔔 Enable Push Notifications</button>
+            <div class="card">
+                <h3>🔔 Enable Notifications</h3>
+                <button onclick="enableNotifications()" style="background: linear-gradient(135deg, #e74c3c, #c0392b);">🔔 Enable Push Notifications</button>
             </div>
             
             <!-- Recent Alerts -->
-            <div style="background: rgba(255,255,255,0.1); padding: 20px; border-radius: 12px; margin-bottom: 20px;">
-                <h3 style="color: white; margin-bottom: 15px;">📢 Recent Alerts</h3>
+            <div class="card">
+                <h3>📢 Recent Alerts</h3>
                 <div id="alertsList" style="max-height: 200px; overflow-y: auto;"></div>
             </div>
             
             <!-- Emergency Instructions -->
-            <div style="background: rgba(255,255,255,0.1); padding: 20px; border-radius: 12px;">
-                <h3 style="color: white; margin-bottom: 15px;">⚡ Emergency Instructions</h3>
-                <div id="emergencyInstructions" style="color: white; font-size: 14px;">
-                    <p>• Boil water for 10 minutes before drinking</p>
-                    <p>• Give ORS to children with diarrhea</p>
-                    <p>• Wash hands frequently with soap</p>
-                    <p>• Avoid street food during outbreaks</p>
+            <div class="card">
+                <h3>⚡ Emergency Instructions</h3>
+                <div id="emergencyInstructions" style="color: #2c3e50; font-size: 14px;">
+                    <p style="margin-bottom: 8px;">• Boil water for 10 minutes before drinking</p>
+                    <p style="margin-bottom: 8px;">• Give ORS to children with diarrhea</p>
+                    <p style="margin-bottom: 8px;">• Wash hands frequently with soap</p>
+                    <p style="margin-bottom: 8px;">• Avoid street food during outbreaks</p>
                 </div>
             </div>
         </div>ty:</label>
@@ -380,43 +507,78 @@
         </div>
 
         <div id="message"></div>
-        
-        <!-- Dashboard Section -->
-        <div class="tabs" style="margin-top: 30px;">
-            <button class="tab" onclick="showTab('dashboard')">📊 Dashboard</button>
-            <button class="tab" onclick="showTab('alerts-view')">🚨 View Alerts</button>
-            <button class="tab" onclick="showTab('profile')">👤 Profile</button>
-        </div>
 
         <div id="dashboard" class="tab-content">
-            <h3 style="color: white; margin-bottom: 20px;">📊 Health Statistics</h3>
-            <div id="stats-container" style="background: rgba(255,255,255,0.1); padding: 20px; border-radius: 12px; margin-bottom: 20px;">
-                <div style="color: white; margin-bottom: 10px;">📋 Total Reports: <span id="total-reports">Loading...</span></div>
-                <div style="color: white; margin-bottom: 10px;">🚨 Active Alerts: <span id="active-alerts">Loading...</span></div>
-                <div style="color: white; margin-bottom: 10px;">💧 Water Sources: <span id="water-sources">Loading...</span></div>
+            <div class="card">
+                <h3>📊 Health Statistics</h3>
+                <div style="margin-bottom: 15px;">
+                    <div style="color: #2c3e50; margin-bottom: 8px; display: flex; justify-content: space-between;">
+                        <span>📋 Total Reports:</span> 
+                        <strong id="total-reports">Loading...</strong>
+                    </div>
+                    <div style="color: #2c3e50; margin-bottom: 8px; display: flex; justify-content: space-between;">
+                        <span>🚨 Active Alerts:</span> 
+                        <strong id="active-alerts">Loading...</strong>
+                    </div>
+                    <div style="color: #2c3e50; margin-bottom: 8px; display: flex; justify-content: space-between;">
+                        <span>💧 Water Sources:</span> 
+                        <strong id="water-sources">Loading...</strong>
+                    </div>
+                </div>
+                <button onclick="loadDashboard()">🔄 Refresh Stats</button>
             </div>
-            <button onclick="loadDashboard()">🔄 Refresh Stats</button>
         </div>
 
         <div id="alerts-view" class="tab-content">
-            <h3 style="color: white; margin-bottom: 20px;">🚨 Recent Alerts</h3>
-            <div id="alerts-container"></div>
-            <button onclick="loadAlerts()">🔄 Refresh Alerts</button>
+            <div class="card">
+                <h3>🚨 Recent Alerts</h3>
+                <div id="alerts-container"></div>
+                <button onclick="loadAlerts()">🔄 Refresh Alerts</button>
+            </div>
         </div>
 
         <div id="profile" class="tab-content">
-            <h3 style="color: white; margin-bottom: 20px;">👤 User Profile</h3>
-            <div class="form-group">
-                <label>📱 Device Info:</label>
-                <div style="background: rgba(255,255,255,0.1); padding: 15px; border-radius: 12px; color: white;">
-                    <div>📱 Platform: <span id="platform"></span></div>
-                    <div>🌐 Browser: <span id="browser"></span></div>
-                    <div>📍 Location: <span id="location">Getting location...</span></div>
-                    <div>⏰ Last Active: <span id="last-active"></span></div>
+            <div class="card">
+                <h3>👤 User Profile</h3>
+                <div class="form-group">
+                    <label>📱 Device Info:</label>
+                    <div style="background: #f8f9fa; padding: 15px; border-radius: 12px; color: #2c3e50; border: 1px solid #e1e8ed;">
+                        <div style="margin-bottom: 8px;">📱 Platform: <span id="platform"></span></div>
+                        <div style="margin-bottom: 8px;">🌐 Browser: <span id="browser"></span></div>
+                        <div style="margin-bottom: 8px;">📍 Location: <span id="location">Getting location...</span></div>
+                        <div>⏰ Last Active: <span id="last-active"></span></div>
+                    </div>
                 </div>
+                <button onclick="getLocation()">📍 Update Location</button>
+                <button onclick="installApp()" style="background: linear-gradient(135deg, #9b59b6, #8e44ad); margin-top: 10px;">📱 Install App</button>
+                <button onclick="openAdminDashboard()" style="background: linear-gradient(135deg, #e74c3c, #c0392b); margin-top: 10px;">🏥 Admin Dashboard</button>
             </div>
-            <button onclick="getLocation()">📍 Update Location</button>
-            <button onclick="installApp()" style="background: linear-gradient(45deg, #9b59b6, #8e44ad); margin-top: 10px;">📱 Install App</button>
+        </div>
+        
+        </div>
+        
+        <!-- Bottom Navigation -->
+        <div class="bottom-nav">
+            <button class="tab active" onclick="showTab('health')">
+                <div class="tab-icon">🏥</div>
+                <div>Health</div>
+            </button>
+            <button class="tab" onclick="showTab('water')">
+                <div class="tab-icon">💧</div>
+                <div>Water</div>
+            </button>
+            <button class="tab" onclick="showTab('community')">
+                <div class="tab-icon">👥</div>
+                <div>Community</div>
+            </button>
+            <button class="tab" onclick="showTab('education')">
+                <div class="tab-icon">📚</div>
+                <div>Education</div>
+            </button>
+            <button class="tab" onclick="showTab('dashboard')">
+                <div class="tab-icon">📊</div>
+                <div>Stats</div>
+            </button>
         </div>
     </div>
 
@@ -429,13 +591,13 @@
                 await fetch(`${API_URL.replace('/api', '')}/health`);
                 return true;
             } catch {
-                showMessage('Backend server not running! Start with: uvicorn main:app --reload', 'error');
+                showMessage('⚠️ Server offline - Using local prediction model', 'error');
                 return false;
             }
         }
 
         function showTab(tabName) {
-            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.bottom-nav .tab').forEach(t => t.classList.remove('active'));
             document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
             event.target.classList.add('active');
             document.getElementById(tabName).classList.add('active');
@@ -887,6 +1049,33 @@
             }
         }
 
+        // Water source report deletion
+        async function deleteWaterSourceReport(reportId) {
+            try {
+                const response = await fetch(`${API_URL}/water/reports/${reportId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({}));
+                    throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                showMessage('✅ Water source report deleted successfully', 'success');
+                loadDashboard(); // Refresh stats
+                return true;
+            } catch (error) {
+                const errorMsg = error.message === 'Failed to fetch' 
+                    ? 'Network error - check connection' 
+                    : error.message || 'Unknown error occurred';
+                showMessage(`❌ Failed to delete water source report: ${errorMsg}`, 'error');
+                return false;
+            }
+        }
+
         // Load alerts
         async function loadAlerts() {
             try {
@@ -979,18 +1168,312 @@
                 showMessage('📱 Add this page to your home screen for app-like experience!', 'success');
             }
         }
+        
+        function openAdminDashboard() {
+            window.open('admin_dashboard.html', '_blank');
+        }
 
+        // Enhanced functionalities
+        async function submitCommunityReport() {
+            const reporterName = document.getElementById('reporterName').value;
+            const location = document.getElementById('reportLocation').value;
+            const symptoms = Array.from(document.querySelectorAll('input[name="symptoms"]:checked')).map(cb => cb.value);
+            const language = document.getElementById('languageSelect').value;
+            
+            if (!reporterName || !location || symptoms.length === 0) {
+                showMessage('❌ Please fill all required fields', 'error');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_URL}/community/report`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        reporter_name: reporterName,
+                        location: location,
+                        symptoms: symptoms,
+                        language: language
+                    })
+                });
+                
+                const result = await response.json();
+                if (result.status === 'success') {
+                    showMessage('✅ Community report submitted successfully', 'success');
+                    document.getElementById('communityReportForm').reset();
+                } else {
+                    showMessage(`❌ ${result.message}`, 'error');
+                }
+            } catch (error) {
+                showMessage('❌ Network error. Report stored offline.', 'error');
+                storeOfflineReport('community_report', {
+                    reporter_name: reporterName,
+                    location: location,
+                    symptoms: symptoms,
+                    timestamp: new Date().toISOString()
+                });
+            }
+        }
+        
+        async function loadEducationalContent() {
+            const language = document.getElementById('languageSelect').value;
+            try {
+                const response = await fetch(`${API_URL}/education/topics?language=${language}`);
+                const topics = await response.json();
+                const container = document.getElementById('educationContent');
+                
+                if (topics.length === 0) {
+                    container.innerHTML = '<div class="education-item"><h4>📚 No content available</h4><p>Educational content will be loaded from database</p></div>';
+                    return;
+                }
+                
+                container.innerHTML = topics.map(topic => `
+                    <div class="education-item" onclick="loadTopicContent('${topic.key}', '${language}')">
+                        <h4>${topic.title}</h4>
+                        <p>${topic.preview}</p>
+                        <button onclick="event.stopPropagation(); downloadOfflineContent('${topic.key}', '${language}')" 
+                                style="background: #3498db; color: white; border: none; padding: 5px 10px; border-radius: 4px; font-size: 12px; margin-top: 5px;">📱 Offline</button>
+                    </div>
+                `).join('');
+            } catch (error) {
+                document.getElementById('educationContent').innerHTML = '<div class="education-item"><h4>❌ Error loading content</h4><p>Check database connection</p></div>';
+            }
+        }
+        
+        async function downloadOfflineContent(topicKey, language) {
+            try {
+                const content = await fetch(`${API_URL}/education/content/${topicKey}?language=${language}`).then(r => r.json());
+                const offlineContent = JSON.parse(localStorage.getItem('offlineEducation') || '{}');
+                offlineContent[`${topicKey}_${language}`] = {
+                    ...content,
+                    downloadedAt: new Date().toISOString()
+                };
+                localStorage.setItem('offlineEducation', JSON.stringify(offlineContent));
+                showMessage('📱 Content downloaded for offline use', 'success');
+            } catch (error) {
+                showMessage('❌ Download failed', 'error');
+            }
+        }
+        
+        async function loadTopicContent(topic, language) {
+            try {
+                const content = await fetch(`${API_URL}/education/content/${topic}?language=${language}`).then(r => r.json());
+                const modal = document.createElement('div');
+                modal.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 1000; display: flex; align-items: center; justify-content: center;';
+                
+                modal.innerHTML = `
+                    <div style="background: white; padding: 20px; border-radius: 12px; max-width: 90%; max-height: 80%; overflow-y: auto;">
+                        <h3 style="color: #2c3e50; margin-top: 0;">${content.title}</h3>
+                        <ul style="color: #34495e;">
+                            ${content.content.map(item => `<li style="margin: 10px 0;">${item}</li>`).join('')}
+                        </ul>
+                        <button onclick="this.parentElement.parentElement.remove()" 
+                                style="background: #e74c3c; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer;">Close</button>
+                    </div>
+                `;
+                
+                document.body.appendChild(modal);
+            } catch (error) {
+                showMessage('❌ Error loading content', 'error');
+            }
+        }
+        
+        async function checkWaterQuality() {
+            const sensorId = document.getElementById('sensorId').value;
+            if (!sensorId) {
+                showMessage('❌ Please enter sensor ID', 'error');
+                return;
+            }
+            
+            try {
+                const reading = await fetch(`${API_URL}/iot/sensors/${sensorId}/reading`).then(r => r.json());
+                
+                if (reading.error) {
+                    showMessage(`❌ ${reading.error}`, 'error');
+                    return;
+                }
+                
+                const status = reading.is_contaminated ? '🔴 CONTAMINATED' : '🟢 SAFE';
+                const statusColor = reading.is_contaminated ? '#e74c3c' : '#27ae60';
+                
+                document.getElementById('waterQualityResult').innerHTML = `
+                    <div style="background: rgba(255,255,255,0.1); padding: 15px; border-radius: 8px; margin-top: 10px;">
+                        <h4 style="color: ${statusColor}; margin: 0 0 10px 0;">${status}</h4>
+                        <div style="color: white; font-size: 14px;">
+                            <p>📊 pH Level: ${reading.ph_level}</p>
+                            <p>🌊 Turbidity: ${reading.turbidity} NTU</p>
+                            <p>🦠 Bacterial Count: ${reading.bacterial_count}</p>
+                            <p>🌡️ Temperature: ${reading.temperature}°C</p>
+                            <p>💧 Chlorine: ${reading.chlorine_level} mg/L</p>
+                        </div>
+                    </div>
+                `;
+                
+                if (reading.is_contaminated) {
+                    showMessage('⚠️ Water source contaminated! Avoid consumption.', 'error');
+                }
+            } catch (error) {
+                showMessage('❌ Error checking water quality', 'error');
+            }
+        }
+        
+        async function storeOfflineReport(type, data) {
+            try {
+                const offlineData = JSON.parse(localStorage.getItem('offlineReports') || '[]');
+                offlineData.push({
+                    id: Date.now(),
+                    type: type,
+                    data: data,
+                    timestamp: new Date().toISOString()
+                });
+                localStorage.setItem('offlineReports', JSON.stringify(offlineData));
+                updateOfflineStatus();
+            } catch (error) {
+                console.error('Error storing offline data:', error);
+            }
+        }
+        
+        async function syncOfflineData() {
+            try {
+                const offlineData = JSON.parse(localStorage.getItem('offlineReports') || '[]');
+                if (offlineData.length === 0) {
+                    showMessage('📱 No offline data to sync', 'success');
+                    return;
+                }
+                
+                let syncedCount = 0;
+                for (const report of offlineData) {
+                    try {
+                        await fetch(`${API_URL}/offline/store`, {
+                            method: 'POST',
+                            headers: {'Content-Type': 'application/json'},
+                            body: JSON.stringify({
+                                report_type: report.type,
+                                data: report.data
+                            })
+                        });
+                        syncedCount++;
+                    } catch (error) {
+                        console.error('Sync error:', error);
+                    }
+                }
+                
+                if (syncedCount > 0) {
+                    localStorage.removeItem('offlineReports');
+                    showMessage(`✅ Synced ${syncedCount} offline reports`, 'success');
+                    updateOfflineStatus();
+                }
+            } catch (error) {
+                showMessage('❌ Sync failed', 'error');
+            }
+        }
+        
+        function updateOfflineStatus() {
+            const offlineData = JSON.parse(localStorage.getItem('offlineReports') || '[]');
+            const statusElement = document.getElementById('offlineStatus');
+            const statsElement = document.getElementById('offlineStats');
+            
+            if (statusElement) {
+                statusElement.textContent = offlineData.length > 0 ? `${offlineData.length} reports pending sync` : 'All data synced';
+            }
+            
+            if (statsElement) {
+                const unsynced = offlineData.filter(r => !r.synced).length;
+                const total = offlineData.length;
+                statsElement.innerHTML = `
+                    <p>Total reports: ${total}</p>
+                    <p>Unsynced: ${unsynced}</p>
+                    <p>Synced: ${total - unsynced}</p>
+                `;
+            }
+        }
+        
+        function updateConnectionStatus() {
+            const statusElement = document.getElementById('connectionStatus');
+            if (statusElement) {
+                if (navigator.onLine) {
+                    statusElement.textContent = '🌐 Online';
+                    statusElement.className = 'status-indicator status-online';
+                } else {
+                    statusElement.textContent = '📱 Offline';
+                    statusElement.className = 'status-indicator status-offline';
+                }
+            }
+        }
+        
+        // SMS Data Collection Functions
+        function updateSMSMessage() {
+            const template = document.getElementById('smsTemplate').value;
+            const language = document.getElementById('languageSelect').value;
+            
+            const templates = {
+                'health_survey': {
+                    'en': 'Health Survey: Reply with HEALTH [symptoms] [location] [age]',
+                    'hi': 'स्वास्थ्य सर्वेक्षण: HEALTH [लक्षण] [स्थान] [उम्र] के साथ उत्तर दें',
+                    'as': 'স্বাস্থ্য সমীক্ষা: HEALTH [লক্ষণ] [স্থান] [বয়স] দিয়ে উত্তর দিন'
+                },
+                'water_quality': {
+                    'en': 'Water Quality: Reply with WATER [location] [safe/unsafe] [source]',
+                    'hi': 'पानी की गुणवत्ता: WATER [स्थान] [सुरक्षित/असुरक्षित] [स्रोत] के साथ उत्तर दें'
+                },
+                'symptom_report': {
+                    'en': 'Symptom Report: Reply with SYMPTOM [fever/diarrhea/vomiting] [location]',
+                    'hi': 'लक्षण रिपोर्ट: SYMPTOM [बुखार/दस्त/उल्टी] [स्थान] के साथ उत्तर दें'
+                }
+            };
+            
+            const message = templates[template]?.[language] || templates[template]?.['en'] || '';
+            console.log('SMS Template:', message);
+        }
+        
+        async function sendSMSDataRequest() {
+            const phoneNumbers = document.getElementById('smsPhoneNumbers').value.split(',').map(p => p.trim());
+            const template = document.getElementById('smsTemplate').value;
+            const language = document.getElementById('languageSelect').value;
+            
+            if (!phoneNumbers.length || phoneNumbers[0] === '') {
+                showMessage('❌ Please enter phone numbers', 'error');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_URL}/sms/send-data-request`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        phone_numbers: phoneNumbers,
+                        template_type: template,
+                        language: language
+                    })
+                });
+                
+                const result = await response.json();
+                if (result.status === 'success') {
+                    showMessage(`📱 SMS sent to ${result.success_count} numbers`, 'success');
+                    document.getElementById('smsPhoneNumbers').value = '';
+                } else {
+                    showMessage(`❌ ${result.message}`, 'error');
+                }
+            } catch (error) {
+                showMessage('❌ Failed to send SMS', 'error');
+            }
+        }
+        
         // Initialize app
         window.onload = function() {
-            updateConnectionStatus();
-            updateOfflineStats();
-            getGPSLocation();
+            loadDashboard();
             loadAlerts();
+            loadProfile();
+            loadEducationalContent();
+            updateOfflineStatus();
+            updateConnectionStatus();
+            updateSMSMessage();
             
             // Load saved language
             const savedLanguage = localStorage.getItem('selectedLanguage');
             if (savedLanguage) {
                 document.getElementById('languageSelect').value = savedLanguage;
+                updateSMSMessage();
             }
         };
         
@@ -998,6 +1481,7 @@
         setInterval(() => {
             if (navigator.onLine) {
                 loadAlerts();
+
             }
             updateConnectionStatus();
         }, 30000);
@@ -1013,6 +1497,10 @@
             showMessage('📱 Working offline. Data will sync when connected.', 'error');
             updateConnectionStatus();
         });
+        
+
+        
+
     </script>
 </body>
 </html>

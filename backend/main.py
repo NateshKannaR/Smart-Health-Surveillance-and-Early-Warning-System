@@ -2,11 +2,22 @@ from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
-from typing import Optional
+from typing import Optional, List
 import sqlite3
 from datetime import datetime
+from services.sms_service import SMSService
+from services.iot_service import IoTWaterSensorService
+from services.education_service import HealthEducationService
+from services.offline_service import OfflineDataService
+from services.community_service import CommunityVolunteerService
+from services.enhanced_sms_service import EnhancedSMSService
+from services.resource_allocation_service import ResourceAllocationService
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from ml_models.outbreak_prediction import predict_outbreak
 
-app = FastAPI(title="Health Surveillance API", version="1.0.0")
+app = FastAPI(title="Smart Health Surveillance & Early Warning System", version="2.0.0")
 
 app.add_middleware(
     CORSMiddleware,
@@ -15,6 +26,15 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Initialize services
+sms_service = SMSService()
+iot_service = IoTWaterSensorService()
+education_service = HealthEducationService()
+offline_service = OfflineDataService()
+community_service = CommunityVolunteerService()
+enhanced_sms_service = EnhancedSMSService()
+resource_service = ResourceAllocationService()
 
 # Pydantic models
 class HealthReportCreate(BaseModel):
@@ -38,9 +58,60 @@ class AlertCreate(BaseModel):
     location: Optional[str] = "Mobile Report"
     message: Optional[str] = "Alert from mobile app"
 
+class SMSAlertRequest(BaseModel):
+    phone_numbers: List[str]
+    message: str
+    language: Optional[str] = "en"
+
+class CommunityReportRequest(BaseModel):
+    reporter_name: str
+    location: str
+    symptoms: List[str]
+    patient_count: Optional[int] = 1
+    language: Optional[str] = "en"
+
+class OfflineReportRequest(BaseModel):
+    report_type: str
+    data: dict
+
+class VolunteerReportRequest(BaseModel):
+    reporter_name: str
+    location: str
+    report_type: str
+    description: str
+    language: Optional[str] = "en"
+
+class SMSDataRequest(BaseModel):
+    phone_numbers: List[str]
+    template_type: str
+    language: Optional[str] = "en"
+    custom_message: Optional[str] = None
+
+class ResourceRequest(BaseModel):
+    resource_type: str
+    quantity: int
+    priority: str
+    location: str
+    requester_name: Optional[str] = "Mobile User"
+    justification: Optional[str] = "Mobile app request"
+
+class EmailAlertRequest(BaseModel):
+    email: str
+    subject: str
+    message: str
+    alert_type: str
+
 @app.get("/mobile")
 async def mobile_app():
     return FileResponse('mobile.html')
+
+@app.get("/enhanced_mobile")
+async def enhanced_mobile_app():
+    return FileResponse('enhanced_mobile.html')
+
+@app.get("/enhanced_features")
+async def enhanced_features_app():
+    return FileResponse('enhanced_mobile_features.html')
 
 @app.get("/")
 async def root():
@@ -53,6 +124,7 @@ async def health_check():
 @app.post("/api/health/reports")
 async def create_health_report(report: HealthReportCreate):
     try:
+        # Store health report
         conn = sqlite3.connect("health_surveillance.db")
         cursor = conn.cursor()
         cursor.execute("""
@@ -62,13 +134,25 @@ async def create_health_report(report: HealthReportCreate):
         """, (report.disease, report.severity, report.location, datetime.now()))
         conn.commit()
         conn.close()
-        return {"status": "success"}
+        
+        # Trigger AI prediction for this location
+        prediction_result = await trigger_outbreak_prediction(report.location)
+        
+        response = {"status": "success"}
+        if prediction_result.get('alert_generated'):
+            response['alert'] = {
+                'severity': prediction_result['alert_data'].get('severity'),
+                'message': f"Alert: {prediction_result['alert_data'].get('severity')} risk detected in {report.location}"
+            }
+        
+        return response
     except Exception as e:
         return {"status": "error", "message": str(e)}
 
 @app.post("/api/water/sources")
 async def create_water_source(source: WaterSourceCreate):
     try:
+        # Store water quality report
         conn = sqlite3.connect("health_surveillance.db")
         cursor = conn.cursor()
         cursor.execute("""
@@ -80,7 +164,18 @@ async def create_water_source(source: WaterSourceCreate):
               source.temperature, source.source_type, not source.is_safe, 0.2, 1, datetime.now()))
         conn.commit()
         conn.close()
-        return {"status": "success"}
+        
+        # Trigger AI prediction for this location
+        prediction_result = await trigger_outbreak_prediction(source.location)
+        
+        response = {"status": "success"}
+        if prediction_result.get('alert_generated'):
+            response['alert'] = {
+                'severity': prediction_result['alert_data'].get('severity'),
+                'message': f"Water contamination alert: {prediction_result['alert_data'].get('severity')} risk in {source.location}"
+            }
+        
+        return response
     except Exception as e:
         return {"status": "error", "message": str(e)}
 
@@ -91,12 +186,16 @@ async def create_alert(alert: AlertCreate):
         cursor = conn.cursor()
         cursor.execute("""
             INSERT INTO alerts 
-            (severity, is_active, created_at)
-            VALUES (?, ?, ?)
-        """, (alert.severity, 1, datetime.now()))
+            (severity, is_active, created_at, location, message)
+            VALUES (?, ?, ?, ?, ?)
+        """, (alert.severity, 1, datetime.now(), alert.location, alert.message))
         conn.commit()
         conn.close()
-        return {"status": "success"}
+        
+        # Trigger prediction for alert location
+        prediction_result = await trigger_outbreak_prediction(alert.location)
+        
+        return {"status": "success", "prediction_triggered": prediction_result.get('alert_generated', False)}
     except Exception as e:
         return {"status": "error", "message": str(e)}
 
@@ -150,6 +249,13 @@ async def get_water_stats():
     except:
         return {"total_sources": 0, "safe_sources": 0, "contaminated_sources": 0}
 
+# Auto-prediction endpoint for testing
+@app.post("/api/trigger-prediction/{location}")
+async def manual_trigger_prediction(location: str):
+    """Manually trigger prediction for testing"""
+    result = await trigger_outbreak_prediction(location)
+    return result
+
 @app.get("/api/water/sources")
 async def get_water_sources():
     try:
@@ -201,14 +307,21 @@ async def get_alerts():
     try:
         conn = sqlite3.connect("health_surveillance.db")
         cursor = conn.cursor()
-        cursor.execute("SELECT id, severity, is_active, created_at FROM alerts ORDER BY id DESC LIMIT 10")
+        cursor.execute("""
+            SELECT id, severity, is_active, created_at, location, message 
+            FROM alerts 
+            ORDER BY id DESC 
+            LIMIT 10
+        """)
         rows = cursor.fetchall()
         conn.close()
         return [{
             "id": r[0], 
             "severity": r[1],
             "is_active": bool(r[2]),
-            "created_at": str(r[3]) if r[3] else ""
+            "created_at": str(r[3]) if r[3] else "",
+            "location": r[4] if len(r) > 4 else "Unknown",
+            "message": r[5] if len(r) > 5 else "Health alert"
         } for r in rows]
     except Exception as e:
         print(f"Alerts error: {e}")
@@ -282,28 +395,46 @@ async def get_ai_predictions():
         conn = sqlite3.connect("health_surveillance.db")
         cursor = conn.cursor()
         
-        # Get recent health reports for AI analysis
-        cursor.execute("SELECT disease, location, severity, reported_at FROM health_reports ORDER BY id DESC LIMIT 50")
-        reports = cursor.fetchall()
-        
-        # Generate AI predictions based on data
-        predictions = []
-        locations = ['Guwahati', 'Shillong', 'Imphal', 'Aizawl', 'Kohima']
-        diseases = ['cholera', 'typhoid', 'diarrhea', 'hepatitis_a']
-        
-        for i, location in enumerate(locations[:3]):
-            predictions.append({
-                "disease": diseases[i % len(diseases)],
-                "location": location,
-                "probability": round(0.4 + (i * 0.2), 2),
-                "timeframe": f"{3 + i * 4} days",
-                "confidence": ["Medium", "High", "Very High"][i],
-                "factors": ["Weather conditions", "Water contamination", "Population density"]
-            })
+        # Get actual predictions from database
+        cursor.execute("""
+            SELECT location, disease, risk_score, predicted_cases, confidence, factors, prediction_date
+            FROM predictions 
+            ORDER BY id DESC 
+            LIMIT 10
+        """)
+        prediction_rows = cursor.fetchall()
         
         conn.close()
+        
+        if len(prediction_rows) == 0:
+            return []
+        
+        # Format for dashboard
+        predictions = []
+        for i, row in enumerate(prediction_rows):
+            location, disease, risk_score, predicted_cases, confidence, factors, prediction_date = row
+            
+            import json
+            try:
+                factors_list = json.loads(factors) if factors else []
+            except:
+                factors_list = []
+            
+            predictions.append({
+                "id": i + 1,
+                "disease": disease,
+                "location": location,
+                "riskScore": int(risk_score * 100),
+                "predictedCases": predicted_cases,
+                "confidence": int(confidence * 100),
+                "factors": factors_list,
+                "timeframe": "7-14 days",
+                "timestamp": prediction_date
+            })
+        
         return predictions
     except Exception as e:
+        print(f"Prediction error: {e}")
         return []
 
 # Social Media Sentiment API
@@ -505,3 +636,323 @@ async def get_risk_score():
         }
     except:
         return {"score": 45, "level": "Medium", "factors": {}}
+
+# AI Prediction Function
+async def trigger_outbreak_prediction(location: str):
+    """Automatically trigger AI prediction when new data is added"""
+    try:
+        conn = sqlite3.connect("health_surveillance.db")
+        cursor = conn.cursor()
+        
+        # Get recent health reports for this location
+        cursor.execute("""
+            SELECT disease, severity, reported_at, location
+            FROM health_reports 
+            WHERE location LIKE ? AND reported_at > datetime('now', '-7 days')
+        """, (f"%{location}%",))
+        health_reports = [{'disease': r[0], 'severity': r[1], 'reported_at': r[2], 'location': r[3]} 
+                         for r in cursor.fetchall()]
+        
+        # Get recent water quality reports for this location
+        cursor.execute("""
+            SELECT location, ph_level, turbidity, bacterial_count, is_contaminated, tested_at
+            FROM water_quality_reports 
+            WHERE location LIKE ? AND tested_at > datetime('now', '-7 days')
+        """, (f"%{location}%",))
+        water_reports = [{'location': r[0], 'ph_level': r[1], 'turbidity': r[2],
+                         'bacterial_count': r[3], 'is_contaminated': r[4], 'tested_at': r[5]} 
+                        for r in cursor.fetchall()]
+        
+        conn.close()
+        
+        # Only run prediction if we have sufficient data
+        if len(health_reports) >= 2 or len(water_reports) >= 1:
+            from ml_models.outbreak_prediction import predict_outbreak
+            prediction = predict_outbreak(health_reports, water_reports, location)
+            
+            # Store prediction in database
+            conn = sqlite3.connect("health_surveillance.db")
+            cursor = conn.cursor()
+            cursor.execute("""
+                INSERT INTO predictions 
+                (location, disease, risk_score, predicted_cases, factors, confidence, prediction_date)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+            """, (location, prediction['disease'], prediction['risk_score'], 
+                  prediction['predicted_cases'], str(prediction['factors']), 
+                  prediction['confidence'], datetime.now()))
+            conn.commit()
+            conn.close()
+            
+            # Send email alert if high risk
+            if prediction['risk_score'] > 0.6:  # High risk threshold
+                try:
+                    from services.email_service import EmailService
+                    email_service = EmailService()
+                    email_result = email_service.send_risk_alert("niswan0077@gmail.com", prediction)
+                    prediction['email_sent'] = email_result['status'] == 'success'
+                    print(f"Email alert sent: {email_result['status']} for {location} (Risk: {prediction['risk_score']:.1%})")
+                except Exception as e:
+                    print(f"Email failed: {str(e)}")
+                    prediction['email_sent'] = False
+            
+            return prediction
+        
+        return {'alert_generated': False}
+        
+    except Exception as e:
+        print(f"Prediction error: {e}")
+        return {'alert_generated': False}
+
+# Emergency Alert System
+@app.post("/api/emergency/alert")
+async def send_emergency_alert(message: str, phone_numbers: List[str], language: str = "en"):
+    """Send emergency health alert"""
+    try:
+        result = enhanced_sms_service.send_emergency_alert(phone_numbers, message, language)
+        return result
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+@app.post("/api/email/alert")
+async def send_email_alert(request: EmailAlertRequest):
+    """Send email alert"""
+    try:
+        # Store email alert in database
+        conn = sqlite3.connect("health_surveillance.db")
+        cursor = conn.cursor()
+        cursor.execute("""
+            INSERT INTO alerts (severity, is_active, created_at, location, message)
+            VALUES (?, ?, ?, ?, ?)
+        """, (request.alert_type, 1, datetime.now(), 'Email Alert', f"Email sent to {request.email}: {request.subject}"))
+        conn.commit()
+        conn.close()
+        
+        # Simulate email sending (in production, use actual email service)
+        return {
+            "status": "success",
+            "message": f"Email alert sent to {request.email}",
+            "subject": request.subject,
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+# Enhanced API Endpoints
+
+# Community Volunteer Reporting
+@app.post("/api/community/volunteer-report")
+async def submit_volunteer_report(request: VolunteerReportRequest):
+    """Submit volunteer report"""
+    try:
+        result = community_service.submit_volunteer_report({
+            'reporter_name': request.reporter_name,
+            'location': request.location,
+            'report_type': request.report_type,
+            'description': request.description,
+            'language': request.language
+        })
+        return result
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+@app.get("/api/community/reports")
+async def get_volunteer_reports(status: str = None, limit: int = 50):
+    """Get volunteer reports"""
+    try:
+        reports = community_service.get_volunteer_reports(status=status, limit=limit)
+        return reports
+    except Exception as e:
+        return {"error": str(e)}
+
+@app.get("/api/community/stats")
+async def get_community_stats():
+    """Get community engagement statistics"""
+    try:
+        stats = community_service.get_community_stats()
+        return stats
+    except Exception as e:
+        return {"error": str(e)}
+
+# Enhanced SMS Services
+@app.post("/api/sms/send-data-request")
+async def send_sms_data_request(request: SMSDataRequest):
+    """Send SMS data collection request"""
+    try:
+        if request.custom_message:
+            # Use custom message
+            result = enhanced_sms_service.send_data_collection_request(
+                request.phone_numbers, 'custom', request.language
+            )
+        else:
+            result = enhanced_sms_service.send_data_collection_request(
+                request.phone_numbers, request.template_type, request.language
+            )
+        return result
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+@app.post("/api/sms/process-response")
+async def process_sms_response(phone_number: str, message: str):
+    """Process incoming SMS response"""
+    try:
+        result = enhanced_sms_service.process_sms_response(phone_number, message)
+        return result
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+@app.get("/api/sms/responses")
+async def get_sms_responses(limit: int = 50, processed: bool = None):
+    """Get SMS responses"""
+    try:
+        responses = enhanced_sms_service.get_sms_responses(limit=limit, processed=processed)
+        return responses
+    except Exception as e:
+        return {"error": str(e)}
+
+@app.get("/api/sms/statistics")
+async def get_sms_statistics():
+    """Get SMS service statistics"""
+    try:
+        stats = enhanced_sms_service.get_sms_statistics()
+        return stats
+    except Exception as e:
+        return {"error": str(e)}
+
+# Resource Allocation
+@app.post("/api/resources/request")
+async def request_resource(request: ResourceRequest):
+    """Submit resource request"""
+    try:
+        result = resource_service.submit_resource_request({
+            'resource_type': request.resource_type,
+            'quantity': request.quantity,
+            'priority': request.priority,
+            'location': request.location,
+            'requester_name': request.requester_name,
+            'justification': request.justification
+        })
+        return result
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+@app.get("/api/resources/allocation")
+async def get_resource_allocation():
+    """Get resource allocation dashboard"""
+    try:
+        allocation_data = resource_service.get_resource_allocation_dashboard()
+        return allocation_data
+    except Exception as e:
+        return {"error": str(e)}
+
+@app.get("/api/resources/requests")
+async def get_resource_requests(status: str = None, priority: str = None, limit: int = 50):
+    """Get resource requests"""
+    try:
+        requests = resource_service.get_resource_requests(status=status, priority=priority, limit=limit)
+        return requests
+    except Exception as e:
+        return {"error": str(e)}
+
+@app.post("/api/resources/approve/{request_id}")
+async def approve_resource_request(request_id: int):
+    """Approve resource request"""
+    try:
+        result = resource_service.approve_resource_request(request_id)
+        return result
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+@app.get("/api/resources/statistics")
+async def get_resource_statistics():
+    """Get resource allocation statistics"""
+    try:
+        stats = resource_service.get_resource_statistics()
+        return stats
+    except Exception as e:
+        return {"error": str(e)}
+
+# Enhanced Education Services
+@app.get("/api/education/topics")
+async def get_education_topics(language: str = "en"):
+    """Get educational topics"""
+    try:
+        topics = education_service.get_all_topics(language)
+        return topics
+    except Exception as e:
+        return {"error": str(e)}
+
+@app.get("/api/education/content/{topic}")
+async def get_education_content(topic: str, language: str = "en"):
+    """Get educational content for specific topic"""
+    try:
+        content = education_service.get_educational_content(topic, language)
+        return content
+    except Exception as e:
+        return {"error": str(e)}
+
+@app.get("/api/education/audio/{topic}")
+async def get_education_audio(topic: str, language: str = "en"):
+    """Get audio content for educational topic (placeholder)"""
+    # In real implementation, return audio file or URL
+    return {"audio_url": f"/static/audio/{topic}_{language}.mp3", "available": False}
+
+# Offline Data Management
+@app.post("/api/offline/store")
+async def store_offline_data(request: OfflineReportRequest):
+    """Store offline data for later sync"""
+    try:
+        result = offline_service.store_offline_report(request.data, request.report_type)
+        return result
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+@app.post("/api/offline/sync")
+async def sync_offline_data():
+    """Sync all offline data"""
+    try:
+        result = offline_service.sync_offline_data()
+        return result
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+@app.get("/api/offline/status")
+async def get_offline_status():
+    """Get offline queue status"""
+    try:
+        status = offline_service.get_offline_queue_status()
+        return status
+    except Exception as e:
+        return {"error": str(e)}
+
+# IoT Water Sensor Integration
+@app.get("/api/iot/sensors/{sensor_id}/reading")
+async def get_sensor_reading(sensor_id: str):
+    """Get water quality reading from IoT sensor"""
+    try:
+        reading = iot_service.get_sensor_reading(sensor_id)
+        return reading
+    except Exception as e:
+        return {"error": str(e)}
+
+# Test email alert endpoint
+@app.get("/api/test-email")
+async def test_email_alert(email: str = "test@example.com"):
+    """Test email alert functionality"""
+    try:
+        alert_request = EmailAlertRequest(
+            email=email,
+            subject="Health Alert Test",
+            message="This is a test health alert from the surveillance system.",
+            alert_type="test"
+        )
+        result = await send_email_alert(alert_request)
+        return result
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+# Include prediction endpoints with alert system
+try:
+    from api_predictions import router as prediction_router
+    app.include_router(prediction_router, prefix="/api")
+except ImportError:
+    print("Prediction router not available")

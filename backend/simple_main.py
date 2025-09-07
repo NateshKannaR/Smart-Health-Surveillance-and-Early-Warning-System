@@ -160,11 +160,22 @@ async def get_water_sources():
     try:
         conn = get_db()
         cursor = conn.cursor()
-        cursor.execute("SELECT * FROM water_quality_reports ORDER BY id DESC LIMIT 10")
+        cursor.execute("SELECT * FROM water_quality_reports ORDER BY id DESC LIMIT 20")
         rows = cursor.fetchall()
         conn.close()
-        return [{"id": r[0], "location": r[1], "ph_level": r[2], "is_safe": not r[10]} for r in rows]
-    except:
+        return [{
+            "id": r[0], 
+            "location": r[1], 
+            "ph_level": r[2], 
+            "turbidity": r[3],
+            "bacterial_count": r[4],
+            "temperature": r[5],
+            "source_type": r[6],
+            "is_safe": not r[10],
+            "tested_at": r[12]
+        } for r in rows]
+    except Exception as e:
+        print(f"Error fetching water sources: {e}")
         return []
 
 @app.get("/api/alerts")
@@ -172,11 +183,19 @@ async def get_alerts():
     try:
         conn = get_db()
         cursor = conn.cursor()
-        cursor.execute("SELECT * FROM alerts ORDER BY id DESC LIMIT 10")
+        cursor.execute("SELECT * FROM alerts WHERE is_resolved = 0 ORDER BY id DESC LIMIT 20")
         rows = cursor.fetchall()
         conn.close()
-        return [{"id": r[0], "severity": r[4], "message": r[3]} for r in rows]
-    except:
+        return [{
+            "id": r[0], 
+            "alert_type": r[1],
+            "location": r[2],
+            "message": r[3],
+            "severity": r[4], 
+            "created_at": r[7]
+        } for r in rows]
+    except Exception as e:
+        print(f"Error fetching alerts: {e}")
         return []
 
 @app.get("/api/health/reports")
@@ -184,9 +203,102 @@ async def get_health_reports():
     try:
         conn = get_db()
         cursor = conn.cursor()
-        cursor.execute("SELECT * FROM health_reports ORDER BY id DESC LIMIT 10")
+        cursor.execute("SELECT * FROM health_reports WHERE severity != 'cured' ORDER BY id DESC LIMIT 20")
         rows = cursor.fetchall()
         conn.close()
-        return [{"id": r[0], "disease": r[8], "severity": r[7], "location": r[5]} for r in rows]
-    except:
+        return [{
+            "id": r[0], 
+            "patient_age": r[2],
+            "patient_gender": r[3],
+            "location": r[5], 
+            "severity": r[7], 
+            "disease": r[8],
+            "reported_at": r[9]
+        } for r in rows]
+    except Exception as e:
+        print(f"Error fetching health reports: {e}")
         return []
+
+@app.delete("/api/health/reports/{report_id}")
+async def delete_health_report(report_id: int):
+    try:
+        conn = get_db()
+        cursor = conn.cursor()
+        cursor.execute("SELECT id FROM health_reports WHERE id = ?", (report_id,))
+        if not cursor.fetchone():
+            raise HTTPException(status_code=404, detail="Health report not found")
+        
+        cursor.execute("DELETE FROM health_reports WHERE id = ?", (report_id,))
+        if cursor.rowcount == 0:
+            raise HTTPException(status_code=404, detail="Health report not found")
+        
+        conn.commit()
+        conn.close()
+        return {"status": "success", "message": "Health report deleted"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error deleting health report: {str(e)}")
+
+@app.delete("/api/water/sources/{source_id}")
+async def delete_water_source(source_id: int):
+    try:
+        conn = get_db()
+        cursor = conn.cursor()
+        cursor.execute("SELECT id FROM water_quality_reports WHERE id = ?", (source_id,))
+        if not cursor.fetchone():
+            raise HTTPException(status_code=404, detail="Water source not found")
+        
+        cursor.execute("DELETE FROM water_quality_reports WHERE id = ?", (source_id,))
+        if cursor.rowcount == 0:
+            raise HTTPException(status_code=404, detail="Water source not found")
+        
+        conn.commit()
+        conn.close()
+        return {"status": "success", "message": "Water report deleted"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error deleting water source: {str(e)}")
+
+@app.delete("/api/alerts/{alert_id}")
+async def delete_alert(alert_id: int):
+    try:
+        conn = get_db()
+        cursor = conn.cursor()
+        cursor.execute("SELECT id FROM alerts WHERE id = ?", (alert_id,))
+        if not cursor.fetchone():
+            raise HTTPException(status_code=404, detail="Alert not found")
+        
+        cursor.execute("DELETE FROM alerts WHERE id = ?", (alert_id,))
+        if cursor.rowcount == 0:
+            raise HTTPException(status_code=404, detail="Alert not found")
+        
+        conn.commit()
+        conn.close()
+        return {"status": "success", "message": "Alert deleted"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error deleting alert: {str(e)}")
+
+@app.put("/api/health/reports/{report_id}/cure")
+async def mark_patient_cured(report_id: int):
+    try:
+        conn = get_db()
+        cursor = conn.cursor()
+        cursor.execute("SELECT id FROM health_reports WHERE id = ?", (report_id,))
+        if not cursor.fetchone():
+            raise HTTPException(status_code=404, detail="Health report not found")
+        
+        cursor.execute("UPDATE health_reports SET severity = 'cured' WHERE id = ?", (report_id,))
+        if cursor.rowcount == 0:
+            raise HTTPException(status_code=404, detail="Health report not found")
+        
+        conn.commit()
+        conn.close()
+        return {"status": "success", "message": "Patient marked as cured"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error marking patient as cured: {str(e)}")

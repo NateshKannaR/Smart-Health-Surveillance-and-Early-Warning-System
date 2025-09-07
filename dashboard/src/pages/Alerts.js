@@ -1,223 +1,192 @@
 import React, { useState, useEffect } from 'react';
-import {
-  Container,
-  Grid,
-  Paper,
-  Typography,
-  Card,
-  CardContent,
-  Chip,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemIcon,
-  IconButton,
-  Badge
-} from '@mui/material';
-import {
-  Warning,
-  Error,
-  Info,
-  CheckCircle,
-  NotificationsActive,
-  Send
-} from '@mui/icons-material';
-import { getAlerts, getAlertStats } from '../services/apiService';
 
-function Alerts() {
+const Alerts = () => {
   const [alerts, setAlerts] = useState([]);
-  const [stats, setStats] = useState({ total_active_alerts: 0, by_severity: {} });
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    loadData();
-    const interval = setInterval(loadData, 5000); // Refresh every 5 seconds
+    fetchAlerts();
+    const interval = setInterval(fetchAlerts, 5000);
     return () => clearInterval(interval);
   }, []);
 
-  const loadData = async () => {
+  const fetchAlerts = async () => {
     try {
-      const [alertsData, statsData] = await Promise.all([
-        getAlerts(),
-        getAlertStats()
-      ]);
-      setAlerts(alertsData);
-      setStats(statsData);
+      const response = await fetch('http://localhost:8000/api/alerts');
+      if (response.ok) {
+        const data = await response.json();
+        setAlerts(data);
+      }
     } catch (error) {
-      console.error('Failed to load alerts data:', error);
+      console.error('Error fetching alerts:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const getSeverityIcon = (severity) => {
-    switch (severity) {
-      case 'critical': return <Error color="error" />;
-      case 'high': return <Warning color="warning" />;
-      case 'medium': return <Info color="info" />;
-      case 'low': return <CheckCircle color="success" />;
-      default: return <Info />;
-    }
-  };
-
-  const getSeverityColor = (severity) => {
-    switch (severity) {
-      case 'critical': return 'error';
-      case 'high': return 'warning';
-      case 'medium': return 'info';
-      case 'low': return 'success';
-      default: return 'default';
-    }
-  };
-
-  const handleResolveAlert = async (id) => {
+  const deleteAlert = async (id) => {
+    if (!window.confirm('Are you sure you want to resolve/delete this alert?')) return;
+    
     try {
-      await fetch(`http://localhost:8000/api/alerts/${id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ is_active: false })
+      const response = await fetch(`http://localhost:8000/api/alerts/${id}`, {
+        method: 'DELETE'
       });
-      loadData(); // Refresh data
+      
+      const result = await response.json();
+      
+      if (response.ok && result.status === 'success') {
+        // Remove from UI immediately
+        setAlerts(alerts.filter(a => a.id !== id));
+        alert('✅ Alert resolved successfully');
+        // Refresh data after a short delay
+        setTimeout(() => fetchAlerts(), 500);
+      } else {
+        alert('❌ Failed to resolve alert: ' + (result.message || 'Unknown error'));
+      }
     } catch (error) {
-      console.error('Failed to resolve alert:', error);
+      console.error('Delete error:', error);
+      alert('❌ Error resolving alert: ' + error.message);
     }
   };
 
-  const handleSendNotification = (alert) => {
-    console.log('Sending notification for:', alert.title);
-  };
+  if (loading) return <div style={{color: 'white', textAlign: 'center', padding: '50px'}}>Loading alerts...</div>;
+
+  const criticalAlerts = alerts.filter(a => a.severity === 'critical');
+  const highAlerts = alerts.filter(a => a.severity === 'high');
+  const mediumAlerts = alerts.filter(a => a.severity === 'medium');
+  const lowAlerts = alerts.filter(a => a.severity === 'low');
 
   return (
-    <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-      <Grid container spacing={3}>
-        <Grid item xs={12}>
-          <Typography variant="h4" gutterBottom sx={{ color: 'white', mb: 3 }}>
-            Alert Management System
-          </Typography>
-        </Grid>
-        
-        <Grid item xs={12} md={3}>
-          <Card>
-            <CardContent>
-              <Badge badgeContent={stats.active} color="error">
-                <NotificationsActive sx={{ fontSize: 40, color: 'primary.main', mb: 2 }} />
-              </Badge>
-              <Typography variant="h6">Active Alerts</Typography>
-              <Typography variant="h3" color="error">{stats.total_active_alerts || 0}</Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        
-        <Grid item xs={12} md={3}>
-          <Card>
-            <CardContent>
-              <Error sx={{ fontSize: 40, color: 'error.main', mb: 2 }} />
-              <Typography variant="h6">Critical Alerts</Typography>
-              <Typography variant="h3" color="error">{stats.by_severity?.critical || 0}</Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        
-        <Grid item xs={12} md={3}>
-          <Card>
-            <CardContent>
-              <CheckCircle sx={{ fontSize: 40, color: 'success.main', mb: 2 }} />
-              <Typography variant="h6">Resolved</Typography>
-              <Typography variant="h3" color="success.main">{alerts.filter(a => !a.is_active).length}</Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        
-        <Grid item xs={12} md={3}>
-          <Card>
-            <CardContent>
-              <Typography variant="h6">Response Rate</Typography>
-              <Typography variant="h3" color="primary">
-                {alerts.length > 0 ? ((alerts.filter(a => !a.is_active).length / alerts.length) * 100).toFixed(1) : 0}%
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
+    <div style={{padding: '20px', color: 'white'}}>
+      <h1 style={{textAlign: 'center', marginBottom: '30px'}}>🚨 Alert Management System</h1>
+      
+      <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '20px', marginBottom: '30px'}}>
+        <div style={{background: 'rgba(192, 57, 43, 0.2)', borderRadius: '15px', padding: '20px', textAlign: 'center'}}>
+          <div style={{fontSize: '2rem', fontWeight: 'bold', color: '#c0392b'}}>{criticalAlerts.length}</div>
+          <div>Critical</div>
+        </div>
+        <div style={{background: 'rgba(231, 76, 60, 0.2)', borderRadius: '15px', padding: '20px', textAlign: 'center'}}>
+          <div style={{fontSize: '2rem', fontWeight: 'bold', color: '#e74c3c'}}>{highAlerts.length}</div>
+          <div>High</div>
+        </div>
+        <div style={{background: 'rgba(243, 156, 18, 0.2)', borderRadius: '15px', padding: '20px', textAlign: 'center'}}>
+          <div style={{fontSize: '2rem', fontWeight: 'bold', color: '#f39c12'}}>{mediumAlerts.length}</div>
+          <div>Medium</div>
+        </div>
+        <div style={{background: 'rgba(46, 204, 113, 0.2)', borderRadius: '15px', padding: '20px', textAlign: 'center'}}>
+          <div style={{fontSize: '2rem', fontWeight: 'bold', color: '#2ecc71'}}>{lowAlerts.length}</div>
+          <div>Low</div>
+        </div>
+      </div>
 
-        <Grid item xs={12}>
-          <Paper sx={{ p: 2 }}>
-            <Typography variant="h6" gutterBottom>Active Alerts</Typography>
-            <List>
-              {alerts.filter(alert => alert.is_active).map((alert) => (
-                <ListItem
-                  key={alert.id}
-                  sx={{
-                    mb: 2,
-                    border: '1px solid rgba(255,255,255,0.1)',
-                    borderRadius: 2,
-                    backgroundColor: 'rgba(255,255,255,0.05)'
-                  }}
-                >
-                  <ListItemIcon>
-                    {getSeverityIcon(alert.severity)}
-                  </ListItemIcon>
-                  <ListItemText
-                    primary={
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                        <span style={{ fontSize: '1.25rem', fontWeight: 500 }}>Alert #{alert.id}</span>
-                        <Chip
-                          label={alert.severity}
-                          color={getSeverityColor(alert.severity)}
-                          size="small"
-                        />
-                      </div>
-                    }
-                    secondary={
-                      <>
-                        <div style={{ marginTop: 8, fontSize: '0.875rem' }}>
-                          {alert.severity} severity alert from mobile app
-                        </div>
-                        <div style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.7)', marginTop: 4 }}>
-                          {new Date(alert.created_at).toLocaleString()}
-                        </div>
-                      </>
-                    }
-                  />
-                  <div style={{ display: 'flex', gap: 8 }}>
-                    <IconButton
-                      color="primary"
-                      onClick={() => handleSendNotification(alert)}
-                      title="Send Notification"
-                    >
-                      <Send />
-                    </IconButton>
-                    <IconButton
-                      color="success"
-                      onClick={() => handleResolveAlert(alert.id)}
-                      title="Mark as Resolved"
-                    >
-                      <CheckCircle />
-                    </IconButton>
+      <div style={{
+        background: 'rgba(255,255,255,0.1)', 
+        borderRadius: '20px', 
+        padding: '20px'
+      }}>
+        <h3 style={{marginBottom: '20px'}}>Active Alerts ({alerts.length})</h3>
+        
+        {alerts.length === 0 ? (
+          <div style={{textAlign: 'center', padding: '40px', color: 'rgba(255,255,255,0.7)'}}>
+            ✅ No active alerts - All systems normal
+          </div>
+        ) : (
+          <div style={{display: 'grid', gap: '15px'}}>
+            {alerts.map(alert => (
+              <div key={alert.id} style={{
+                background: 'rgba(255,255,255,0.1)',
+                borderRadius: '12px',
+                padding: '20px',
+                borderLeft: `4px solid ${getSeverityColor(alert.severity)}`,
+                animation: alert.severity === 'critical' ? 'pulse 2s infinite' : 'none'
+              }}>
+                <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start'}}>
+                  <div style={{flex: 1}}>
+                    <div style={{display: 'flex', gap: '15px', marginBottom: '10px'}}>
+                      <span style={{
+                        background: getSeverityColor(alert.severity),
+                        color: 'white',
+                        padding: '4px 12px',
+                        borderRadius: '15px',
+                        fontSize: '12px',
+                        fontWeight: 'bold'
+                      }}>
+                        {getSeverityIcon(alert.severity)} {alert.severity?.toUpperCase()}
+                      </span>
+                      <span style={{
+                        background: 'rgba(255,255,255,0.2)',
+                        padding: '4px 12px',
+                        borderRadius: '15px',
+                        fontSize: '12px'
+                      }}>
+                        ID: {alert.id}
+                      </span>
+                    </div>
+                    
+                    <h4 style={{margin: '10px 0', fontSize: '18px'}}>
+                      📍 {alert.location || 'System Alert'}
+                    </h4>
+                    
+                    <div style={{
+                      background: 'rgba(255,255,255,0.1)',
+                      padding: '15px',
+                      borderRadius: '8px',
+                      marginTop: '15px'
+                    }}>
+                      <strong>Alert Message:</strong><br/>
+                      {alert.message || 'No message provided'}
+                    </div>
+                    
+                    <div style={{marginTop: '15px', fontSize: '14px', opacity: 0.8}}>
+                      <strong>📅 Created:</strong> {new Date(alert.created_at).toLocaleString()}
+                    </div>
                   </div>
-                </ListItem>
-              ))}
-            </List>
-          </Paper>
-        </Grid>
-
-        <Grid item xs={12}>
-          <Paper sx={{ p: 2 }}>
-            <Typography variant="h6" gutterBottom>Recent Resolved Alerts</Typography>
-            <List>
-              {alerts.filter(alert => !alert.is_active).map((alert) => (
-                <ListItem key={alert.id} sx={{ opacity: 0.7 }}>
-                  <ListItemIcon>
-                    <CheckCircle color="success" />
-                  </ListItemIcon>
-                  <ListItemText
-                    primary={`Alert #${alert.id}`}
-                    secondary={`${alert.severity} severity alert - Resolved on ${new Date(alert.created_at).toLocaleString()}`}
-                  />
-                </ListItem>
-              ))}
-            </List>
-          </Paper>
-        </Grid>
-      </Grid>
-    </Container>
+                  
+                  <div style={{marginLeft: '20px'}}>
+                    <button
+                      onClick={() => deleteAlert(alert.id)}
+                      style={{
+                        background: 'linear-gradient(45deg, #e74c3c, #c0392b)',
+                        color: 'white',
+                        border: 'none',
+                        padding: '8px 16px',
+                        borderRadius: '8px',
+                        cursor: 'pointer',
+                        fontSize: '12px',
+                        fontWeight: 'bold'
+                      }}
+                    >
+                      🗑️ Resolve
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
   );
-}
+};
+
+const getSeverityColor = (severity) => {
+  switch (severity?.toLowerCase()) {
+    case 'critical': return '#c0392b';
+    case 'high': return '#e74c3c';
+    case 'medium': return '#f39c12';
+    case 'low': return '#2ecc71';
+    default: return '#95a5a6';
+  }
+};
+
+const getSeverityIcon = (severity) => {
+  switch (severity?.toLowerCase()) {
+    case 'critical': return '🔴';
+    case 'high': return '🟠';
+    case 'medium': return '🟡';
+    case 'low': return '🟢';
+    default: return '⚪';
+  }
+};
 
 export default Alerts;

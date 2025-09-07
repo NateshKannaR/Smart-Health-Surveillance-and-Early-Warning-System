@@ -1,0 +1,844 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enhanced Health Surveillance Mobile</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container { 
+            max-width: 400px; 
+            margin: 0 auto; 
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 20px; 
+            padding: 30px; 
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+        h1 { 
+            color: white; 
+            text-align: center; 
+            margin-bottom: 30px; 
+            font-size: 28px; 
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+        .tabs { 
+            display: flex; 
+            margin-bottom: 25px;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+        .tab { 
+            flex: 1; 
+            padding: 15px 10px; 
+            background: rgba(255, 255, 255, 0.1);
+            border: none; 
+            cursor: pointer;
+            color: white;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            font-size: 12px;
+        }
+        .tab.active { 
+            background: linear-gradient(45deg, #3498db, #2980b9);
+            transform: scale(1.05);
+        }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .form-group { margin-bottom: 20px; }
+        label { 
+            display: block; 
+            margin-bottom: 8px; 
+            font-weight: 600; 
+            color: white;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+        }
+        select, input, textarea { 
+            width: 100%; 
+            padding: 15px; 
+            border: none;
+            border-radius: 12px; 
+            font-size: 16px;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+        select option { background: #333; color: white; }
+        button { 
+            width: 100%; 
+            padding: 15px; 
+            background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+            color: white; 
+            border: none; 
+            cursor: pointer; 
+            margin-top: 15px;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+        button:hover { 
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+        }
+        .success { 
+            background: linear-gradient(45deg, #2ecc71, #27ae60);
+            color: white; 
+            padding: 15px; 
+            border-radius: 12px; 
+            margin: 15px 0;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+        .error { 
+            background: linear-gradient(45deg, #e74c3c, #c0392b);
+            color: white; 
+            padding: 15px; 
+            border-radius: 12px; 
+            margin: 15px 0;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+        .feature-card {
+            background: rgba(255,255,255,0.1);
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 12px;
+            border-left: 4px solid #3498db;
+        }
+        .resource-bar {
+            background: rgba(255,255,255,0.2);
+            height: 8px;
+            border-radius: 4px;
+            margin: 10px 0;
+            overflow: hidden;
+        }
+        .resource-fill {
+            height: 100%;
+            border-radius: 4px;
+            transition: width 0.3s ease;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🏥 Enhanced Health Surveillance</h1>
+        
+        <div class="tabs">
+            <button class="tab active" onclick="showTab('education')">📚 Education</button>
+            <button class="tab" onclick="showTab('volunteer')">👥 Volunteer</button>
+            <button class="tab" onclick="showTab('sms')">📱 SMS</button>
+            <button class="tab" onclick="showTab('resources')">📊 Resources</button>
+            <button class="tab" onclick="showTab('offline')">💾 Offline</button>
+        </div>
+
+        <!-- Enhanced Educational Modules -->
+        <div id="education" class="tab-content active">
+            <h2 style="color: white; text-align: center; margin-bottom: 20px;">📚 Educational Modules</h2>
+            
+            <!-- Language Selection with Tribal Languages -->
+            <div class="form-group">
+                <label>🌐 Select Language:</label>
+                <select id="languageSelect" onchange="changeLanguage()">
+                    <option value="en">English</option>
+                    <option value="hi">हिंदी (Hindi)</option>
+                    <option value="as">অসমীয়া (Assamese)</option>
+                    <option value="bn">বাংলা (Bengali)</option>
+                    <option value="ne">नेपाली (Nepali)</option>
+                    <option value="mni">মৈতৈলোন্ (Manipuri)</option>
+                    <option value="garo">A·chik (Garo)</option>
+                    <option value="khasi">Khasi</option>
+                    <option value="mizo">Mizo ṭawng</option>
+                </select>
+            </div>
+            
+            <!-- Educational Content with Offline Support -->
+            <div id="educationContent" style="max-height: 300px; overflow-y: auto;">
+                <!-- Content will be loaded dynamically -->
+            </div>
+            
+            <!-- Audio Content for Illiterate Users -->
+            <div class="feature-card">
+                <h3 style="color: white; margin-bottom: 10px;">🔊 Audio Learning</h3>
+                <p style="color: rgba(255,255,255,0.8); font-size: 14px; margin-bottom: 10px;">Listen to health education in your language</p>
+                <button onclick="playAudioEducation()" style="background: linear-gradient(45deg, #e67e22, #d35400);">🎧 Play Audio Guide</button>
+            </div>
+        </div>
+
+        <!-- Community Volunteer Reporting -->
+        <div id="volunteer" class="tab-content">
+            <h2 style="color: white; text-align: center; margin-bottom: 20px;">👥 Community Volunteer Reporting</h2>
+            
+            <form id="volunteerReportForm">
+                <div class="form-group">
+                    <label>👤 Volunteer Name:</label>
+                    <input type="text" id="volunteerName" placeholder="Enter your name" required>
+                </div>
+                
+                <div class="form-group">
+                    <label>📍 Location:</label>
+                    <input type="text" id="volunteerLocation" placeholder="Village/Area name" required>
+                </div>
+                
+                <div class="form-group">
+                    <label>📋 Report Type:</label>
+                    <select id="reportType" required>
+                        <option value="">Select Report Type</option>
+                        <option value="health_symptoms">Health Symptoms</option>
+                        <option value="water_contamination">Water Contamination</option>
+                        <option value="sanitation_issue">Sanitation Issue</option>
+                        <option value="disease_outbreak">Disease Outbreak</option>
+                        <option value="resource_shortage">Resource Shortage</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label>📝 Description:</label>
+                    <textarea id="reportDescription" rows="4" placeholder="Describe the situation in detail..." required></textarea>
+                </div>
+                
+                <button type="button" onclick="submitVolunteerReport()">📤 Submit Volunteer Report</button>
+            </form>
+            
+            <!-- Voice Recording for Illiterate Volunteers -->
+            <div class="feature-card" style="margin-top: 20px;">
+                <h3 style="color: white; margin-bottom: 10px;">🎤 Voice Report</h3>
+                <p style="color: rgba(255,255,255,0.8); font-size: 14px; margin-bottom: 10px;">Record your report in local language</p>
+                <button id="voiceReportBtn" onclick="toggleVoiceReport()" style="background: linear-gradient(45deg, #9b59b6, #8e44ad);">🎤 Start Voice Report</button>
+                <div id="voiceReportStatus" style="color: white; margin-top: 10px; font-size: 14px;"></div>
+            </div>
+        </div>
+
+        <!-- SMS-based Data Collection -->
+        <div id="sms" class="tab-content">
+            <h2 style="color: white; text-align: center; margin-bottom: 20px;">📱 SMS Data Collection</h2>
+            
+            <!-- Send SMS Data Requests -->
+            <div class="feature-card">
+                <h3 style="color: white; margin-bottom: 10px;">📤 Send Data Request</h3>
+                <div class="form-group">
+                    <label>📞 Phone Numbers (comma separated):</label>
+                    <textarea id="smsPhoneNumbers" rows="3" placeholder="+91-9876543210, +91-9876543211"></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label>💬 Message Template:</label>
+                    <select id="smsTemplate" onchange="updateSMSMessage()">
+                        <option value="health_survey">Health Survey</option>
+                        <option value="water_quality">Water Quality Check</option>
+                        <option value="symptom_report">Symptom Reporting</option>
+                        <option value="custom">Custom Message</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label>📝 Message:</label>
+                    <textarea id="smsMessage" rows="4" placeholder="Health survey: Reply with HEALTH [symptoms] [location]"></textarea>
+                </div>
+                
+                <button onclick="sendSMSDataRequest()">📱 Send SMS Request</button>
+            </div>
+            
+            <!-- SMS Response Processing -->
+            <div class="feature-card">
+                <h3 style="color: white; margin-bottom: 10px;">📥 SMS Responses</h3>
+                <div id="smsResponses" style="max-height: 200px; overflow-y: auto;">
+                    <p style="color: rgba(255,255,255,0.8); font-size: 14px;">No SMS responses yet</p>
+                </div>
+                <button onclick="loadSMSResponses()">🔄 Refresh Responses</button>
+            </div>
+        </div>
+
+        <!-- Resource Allocation Dashboard -->
+        <div id="resources" class="tab-content">
+            <h2 style="color: white; text-align: center; margin-bottom: 20px;">📊 Resource Allocation</h2>
+            
+            <div id="resourceContent">
+                <!-- Resource data will be loaded here -->
+            </div>
+            
+            <!-- Resource Request Form -->
+            <div class="feature-card" style="margin-top: 20px;">
+                <h3 style="color: white; margin-bottom: 10px;">📋 Request Resources</h3>
+                <div class="form-group">
+                    <label>🏥 Resource Type:</label>
+                    <select id="resourceType">
+                        <option value="medical_team">Medical Team</option>
+                        <option value="water_testing_kit">Water Testing Kit</option>
+                        <option value="emergency_supplies">Emergency Supplies</option>
+                        <option value="vehicle">Vehicle</option>
+                        <option value="medicine">Medicine</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label>🔢 Quantity Needed:</label>
+                    <input type="number" id="resourceQuantity" min="1" placeholder="Enter quantity">
+                </div>
+                
+                <div class="form-group">
+                    <label>⚡ Priority Level:</label>
+                    <select id="resourcePriority">
+                        <option value="low">Low</option>
+                        <option value="medium">Medium</option>
+                        <option value="high">High</option>
+                        <option value="critical">Critical</option>
+                    </select>
+                </div>
+                
+                <button onclick="requestResource()">📤 Request Resource</button>
+            </div>
+        </div>
+
+        <!-- Enhanced Offline Functionality -->
+        <div id="offline" class="tab-content">
+            <h2 style="color: white; text-align: center; margin-bottom: 20px;">💾 Offline Mode</h2>
+            
+            <!-- Connection Status -->
+            <div class="feature-card">
+                <h3 style="color: white; margin-bottom: 10px;">🌐 Connection Status</h3>
+                <div id="connectionStatus" style="color: white; font-weight: bold;">Checking...</div>
+                <div id="lastSync" style="color: rgba(255,255,255,0.8); font-size: 14px; margin-top: 5px;"></div>
+            </div>
+            
+            <!-- Offline Data Management -->
+            <div class="feature-card">
+                <h3 style="color: white; margin-bottom: 10px;">💾 Offline Data</h3>
+                <div id="offlineStats" style="color: white; font-size: 14px; margin-bottom: 10px;"></div>
+                <button onclick="syncOfflineData()" style="background: linear-gradient(45deg, #3498db, #2980b9);">🔄 Sync Now</button>
+                <button onclick="exportOfflineData()" style="background: linear-gradient(45deg, #f39c12, #e67e22); margin-top: 10px;">📤 Export Data</button>
+            </div>
+            
+            <!-- Offline Educational Content -->
+            <div class="feature-card">
+                <h3 style="color: white; margin-bottom: 10px;">📚 Offline Education</h3>
+                <div id="offlineEducationStatus" style="color: rgba(255,255,255,0.8); font-size: 14px; margin-bottom: 10px;"></div>
+                <button onclick="downloadAllEducationalContent()" style="background: linear-gradient(45deg, #2ecc71, #27ae60);">⬇️ Download All Content</button>
+            </div>
+            
+            <!-- GPS and Location Services -->
+            <div class="feature-card">
+                <h3 style="color: white; margin-bottom: 10px;">📍 Location Services</h3>
+                <div id="gpsLocation" style="color: white; font-size: 14px; margin-bottom: 10px;">Getting location...</div>
+                <button onclick="updateGPSLocation()" style="background: linear-gradient(45deg, #e74c3c, #c0392b);">📍 Update Location</button>
+            </div>
+        </div>
+
+        <div id="message"></div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:8000/api';
+        let isRecording = false;
+        let mediaRecorder;
+
+        function showTab(tabName) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            event.target.classList.add('active');
+            document.getElementById(tabName).classList.add('active');
+        }
+
+        function showMessage(text, type) {
+            const msg = document.getElementById('message');
+            msg.innerHTML = `<div class="${type}">${text}</div>`;
+            setTimeout(() => msg.innerHTML = '', 3000);
+        }
+
+        // Educational content functions
+        async function downloadOfflineContent(topicKey, language) {
+            try {
+                const content = await fetch(`${API_URL}/education/content/${topicKey}?language=${language}`).then(r => r.json());
+                const offlineContent = JSON.parse(localStorage.getItem('offlineEducation') || '{}');
+                offlineContent[`${topicKey}_${language}`] = {
+                    ...content,
+                    downloadedAt: new Date().toISOString()
+                };
+                localStorage.setItem('offlineEducation', JSON.stringify(offlineContent));
+                showMessage('📱 Content downloaded for offline use', 'success');
+            } catch (error) {
+                showMessage('❌ Download failed', 'error');
+            }
+        }
+        
+        async function playAudioContent(topicKey, language) {
+            try {
+                // Check if audio is available offline first
+                const offlineAudio = localStorage.getItem(`audio_${topicKey}_${language}`);
+                if (offlineAudio) {
+                    const audio = new Audio(offlineAudio);
+                    audio.play();
+                    return;
+                }
+                
+                // Try to fetch from server
+                const audioUrl = `${API_URL}/education/audio/${topicKey}?language=${language}`;
+                const audio = new Audio(audioUrl);
+                audio.play();
+                showMessage('🔊 Playing audio content', 'success');
+            } catch (error) {
+                showMessage('❌ Audio not available', 'error');
+            }
+        }
+
+        async function playAudioEducation() {
+            const language = document.getElementById('languageSelect').value;
+            const messages = {
+                'en': 'Welcome to health education. Wash your hands frequently with soap and clean water.',
+                'hi': 'स्वास्थ्य शिक्षा में आपका स्वागत है। साबुन और साफ पानी से बार-बार हाथ धोएं।',
+                'as': 'স্বাস্থ্য শিক্ষায় আপনাকে স্বাগতম। সাবান আৰু পৰিষ্কাৰ পানীৰে বাৰে বাৰে হাত ধুব।'
+            };
+            
+            const message = messages[language] || messages['en'];
+            
+            if ('speechSynthesis' in window) {
+                const utterance = new SpeechSynthesisUtterance(message);
+                utterance.lang = language === 'hi' ? 'hi-IN' : language === 'as' ? 'as-IN' : 'en-US';
+                speechSynthesis.speak(utterance);
+                showMessage('🔊 Playing audio education', 'success');
+            } else {
+                showMessage('❌ Audio not supported on this device', 'error');
+            }
+        }
+        
+        // Community volunteer reporting
+        async function submitVolunteerReport() {
+            const reporterName = document.getElementById('volunteerName').value;
+            const location = document.getElementById('volunteerLocation').value;
+            const reportType = document.getElementById('reportType').value;
+            const description = document.getElementById('reportDescription').value;
+            const language = document.getElementById('languageSelect').value;
+            
+            if (!reporterName || !location || !reportType || !description) {
+                showMessage('❌ Please fill all required fields', 'error');
+                return;
+            }
+            
+            const reportData = {
+                reporter_name: reporterName,
+                location: location,
+                report_type: reportType,
+                description: description,
+                language: language,
+                timestamp: new Date().toISOString()
+            };
+            
+            try {
+                if (navigator.onLine) {
+                    await fetch(`${API_URL}/community/volunteer-report`, {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify(reportData)
+                    });
+                    showMessage('✅ Volunteer report submitted successfully', 'success');
+                } else {
+                    storeOfflineReport('volunteer_report', reportData);
+                    showMessage('📱 Report stored offline. Will sync when connected.', 'success');
+                }
+                
+                // Clear form
+                document.getElementById('volunteerName').value = '';
+                document.getElementById('volunteerLocation').value = '';
+                document.getElementById('reportDescription').value = '';
+            } catch (error) {
+                storeOfflineReport('volunteer_report', reportData);
+                showMessage('❌ Network error. Report stored offline.', 'error');
+            }
+        }
+
+        // Voice reporting for volunteers
+        async function toggleVoiceReport() {
+            const btn = document.getElementById('voiceReportBtn');
+            const status = document.getElementById('voiceReportStatus');
+            
+            if (!isRecording) {
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    mediaRecorder = new MediaRecorder(stream);
+                    let audioChunks = [];
+                    
+                    mediaRecorder.ondataavailable = event => audioChunks.push(event.data);
+                    mediaRecorder.onstop = () => {
+                        const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+                        processVoiceReport(audioBlob);
+                    };
+                    
+                    mediaRecorder.start();
+                    isRecording = true;
+                    btn.textContent = '⏹️ Stop Recording';
+                    btn.style.background = 'linear-gradient(45deg, #e74c3c, #c0392b)';
+                    status.textContent = '🎙️ Recording... Speak your report now';
+                } catch (error) {
+                    showMessage('❌ Microphone access denied', 'error');
+                }
+            } else {
+                mediaRecorder.stop();
+                isRecording = false;
+                btn.textContent = '🎤 Start Voice Report';
+                btn.style.background = 'linear-gradient(45deg, #9b59b6, #8e44ad)';
+                status.textContent = '⏳ Processing voice report...';
+            }
+        }
+
+        async function processVoiceReport(audioBlob) {
+            // Simulate voice processing
+            setTimeout(() => {
+                const mockReports = [
+                    { type: 'health_symptoms', description: 'Multiple cases of diarrhea reported in village center' },
+                    { type: 'water_contamination', description: 'Water source appears contaminated, people getting sick' },
+                    { type: 'resource_shortage', description: 'Need medical supplies and clean water urgently' }
+                ];
+                
+                const report = mockReports[Math.floor(Math.random() * mockReports.length)];
+                
+                // Auto-fill form
+                document.getElementById('reportType').value = report.type;
+                document.getElementById('reportDescription').value = report.description;
+                
+                document.getElementById('voiceReportStatus').innerHTML = 
+                    `✅ Voice processed: ${report.description}<br><button onclick="submitVolunteerReport()" style="margin-top: 10px; padding: 8px 16px; background: #27ae60; color: white; border: none; border-radius: 6px; cursor: pointer;">Submit Report</button>`;
+            }, 2000);
+        }
+        
+        // SMS-based data collection
+        function updateSMSMessage() {
+            const template = document.getElementById('smsTemplate').value;
+            const language = document.getElementById('languageSelect').value;
+            
+            const templates = {
+                'health_survey': {
+                    'en': 'Health Survey: Reply with HEALTH [symptoms] [location] [age]',
+                    'hi': 'स्वास्थ्य सर्वेक्षण: HEALTH [लक्षण] [स्थान] [उम्र] के साथ उत्तर दें',
+                    'as': 'স্বাস্থ্য সমীক্ষা: HEALTH [লক্ষণ] [স্থান] [বয়স] দিয়ে উত্তর দিন'
+                },
+                'water_quality': {
+                    'en': 'Water Quality Check: Reply with WATER [location] [safe/unsafe] [source_type]',
+                    'hi': 'पानी की गुणवत्ता जांच: WATER [स्थान] [सुरक्षित/असुरक्षित] [स्रोत_प्रकार] के साथ उत्तर दें'
+                },
+                'symptom_report': {
+                    'en': 'Symptom Report: Reply with SYMPTOM [fever/diarrhea/vomiting] [location]',
+                    'hi': 'लक्षण रिपोर्ट: SYMPTOM [बुखार/दस्त/उल्टी] [स्थान] के साथ उत्तर दें'
+                }
+            };
+            
+            const message = templates[template]?.[language] || templates[template]?.['en'] || '';
+            document.getElementById('smsMessage').value = message;
+        }
+        
+        async function sendSMSDataRequest() {
+            const phoneNumbers = document.getElementById('smsPhoneNumbers').value.split(',').map(p => p.trim());
+            const message = document.getElementById('smsMessage').value;
+            const language = document.getElementById('languageSelect').value;
+            
+            if (!phoneNumbers.length || !message) {
+                showMessage('❌ Please enter phone numbers and message', 'error');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_URL}/sms/send-data-request`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        phone_numbers: phoneNumbers,
+                        message: message,
+                        language: language
+                    })
+                });
+                
+                const result = await response.json();
+                showMessage(`📱 SMS sent to ${result.success_count} numbers`, 'success');
+                
+                // Clear form
+                document.getElementById('smsPhoneNumbers').value = '';
+                document.getElementById('smsMessage').value = '';
+            } catch (error) {
+                showMessage('❌ Failed to send SMS', 'error');
+            }
+        }
+
+        async function loadSMSResponses() {
+            try {
+                const responses = await fetch(`${API_URL}/sms/responses`).then(r => r.json());
+                const container = document.getElementById('smsResponses');
+                
+                if (responses.length === 0) {
+                    container.innerHTML = '<p style="color: rgba(255,255,255,0.8); font-size: 14px;">No SMS responses yet</p>';
+                    return;
+                }
+                
+                container.innerHTML = responses.map(response => `
+                    <div style="background: rgba(255,255,255,0.1); padding: 10px; margin: 5px 0; border-radius: 8px;">
+                        <div style="color: white; font-weight: bold;">📱 ${response.phone}</div>
+                        <div style="color: rgba(255,255,255,0.8); font-size: 14px;">${response.message}</div>
+                        <div style="color: rgba(255,255,255,0.6); font-size: 12px;">${new Date(response.timestamp).toLocaleString()}</div>
+                    </div>
+                `).join('');
+            } catch (error) {
+                document.getElementById('smsResponses').innerHTML = '<p style="color: white;">❌ Error loading responses</p>';
+            }
+        }
+        
+        // Resource allocation dashboard
+        async function loadResourceDashboard() {
+            try {
+                const resources = await fetch(`${API_URL}/resources/allocation`).then(r => r.json());
+                const container = document.getElementById('resourceContent');
+                
+                container.innerHTML = resources.map(resource => {
+                    const utilizationPercent = Math.round((resource.allocated / resource.needed) * 100);
+                    const statusColor = utilizationPercent >= 80 ? '#27ae60' : utilizationPercent >= 50 ? '#f39c12' : '#e74c3c';
+                    
+                    return `
+                        <div class="feature-card">
+                            <h4 style="color: white; margin: 0 0 10px 0;">${resource.type}</h4>
+                            <div style="display: flex; justify-content: space-between; color: rgba(255,255,255,0.9); font-size: 14px; margin-bottom: 10px;">
+                                <span>Allocated: ${resource.allocated}</span>
+                                <span>Available: ${resource.available}</span>
+                                <span>Needed: ${resource.needed}</span>
+                            </div>
+                            <div class="resource-bar">
+                                <div class="resource-fill" style="background: ${statusColor}; width: ${Math.min(utilizationPercent, 100)}%;"></div>
+                            </div>
+                            <p style="color: ${statusColor}; margin: 0; font-size: 12px;">${utilizationPercent}% Utilization</p>
+                        </div>
+                    `;
+                }).join('');
+            } catch (error) {
+                document.getElementById('resourceContent').innerHTML = '<p style="color: white;">❌ Error loading resource data</p>';
+            }
+        }
+
+        async function requestResource() {
+            const resourceType = document.getElementById('resourceType').value;
+            const quantity = document.getElementById('resourceQuantity').value;
+            const priority = document.getElementById('resourcePriority').value;
+            
+            if (!quantity) {
+                showMessage('❌ Please enter quantity needed', 'error');
+                return;
+            }
+            
+            const requestData = {
+                resource_type: resourceType,
+                quantity: parseInt(quantity),
+                priority: priority,
+                location: localStorage.getItem('userLocation') || 'Mobile Request',
+                timestamp: new Date().toISOString()
+            };
+            
+            try {
+                await fetch(`${API_URL}/resources/request`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(requestData)
+                });
+                
+                showMessage('✅ Resource request submitted successfully', 'success');
+                document.getElementById('resourceQuantity').value = '';
+                loadResourceDashboard();
+            } catch (error) {
+                storeOfflineReport('resource_request', requestData);
+                showMessage('❌ Network error. Request stored offline.', 'error');
+            }
+        }
+        
+        // Enhanced offline functionality
+        async function storeOfflineReport(type, data) {
+            try {
+                const offlineData = JSON.parse(localStorage.getItem('offlineReports') || '[]');
+                offlineData.push({
+                    id: Date.now(),
+                    type: type,
+                    data: data,
+                    timestamp: new Date().toISOString()
+                });
+                localStorage.setItem('offlineReports', JSON.stringify(offlineData));
+                updateOfflineStatus();
+            } catch (error) {
+                console.error('Error storing offline data:', error);
+            }
+        }
+        
+        async function syncOfflineData() {
+            try {
+                const offlineData = JSON.parse(localStorage.getItem('offlineReports') || '[]');
+                if (offlineData.length === 0) {
+                    showMessage('📱 No offline data to sync', 'success');
+                    return;
+                }
+                
+                let syncedCount = 0;
+                for (const report of offlineData) {
+                    try {
+                        await fetch(`${API_URL}/offline/store`, {
+                            method: 'POST',
+                            headers: {'Content-Type': 'application/json'},
+                            body: JSON.stringify({
+                                report_type: report.type,
+                                data: report.data
+                            })
+                        });
+                        syncedCount++;
+                    } catch (error) {
+                        console.error('Sync error:', error);
+                    }
+                }
+                
+                if (syncedCount > 0) {
+                    localStorage.removeItem('offlineReports');
+                    showMessage(`✅ Synced ${syncedCount} offline reports`, 'success');
+                    updateOfflineStatus();
+                }
+            } catch (error) {
+                showMessage('❌ Sync failed', 'error');
+            }
+        }
+
+        async function exportOfflineData() {
+            const offlineData = JSON.parse(localStorage.getItem('offlineReports') || '[]');
+            if (offlineData.length === 0) {
+                showMessage('📱 No offline data to export', 'error');
+                return;
+            }
+            
+            const dataStr = JSON.stringify(offlineData, null, 2);
+            const dataBlob = new Blob([dataStr], {type: 'application/json'});
+            const url = URL.createObjectURL(dataBlob);
+            
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `offline_health_data_${new Date().toISOString().split('T')[0]}.json`;
+            link.click();
+            
+            showMessage('📤 Offline data exported successfully', 'success');
+        }
+
+        async function downloadAllEducationalContent() {
+            const languages = ['en', 'hi', 'as', 'bn'];
+            const topics = ['water_safety', 'hygiene_practices', 'disease_prevention', 'emergency_contacts'];
+            
+            let downloadedCount = 0;
+            for (const lang of languages) {
+                for (const topic of topics) {
+                    try {
+                        await downloadOfflineContent(topic, lang);
+                        downloadedCount++;
+                    } catch (error) {
+                        console.error(`Failed to download ${topic} in ${lang}`);
+                    }
+                }
+            }
+            
+            showMessage(`📚 Downloaded ${downloadedCount} educational modules`, 'success');
+            updateOfflineEducationStatus();
+        }
+
+        function updateOfflineEducationStatus() {
+            const offlineEducation = JSON.parse(localStorage.getItem('offlineEducation') || '{}');
+            const count = Object.keys(offlineEducation).length;
+            document.getElementById('offlineEducationStatus').textContent = 
+                count > 0 ? `${count} educational modules available offline` : 'No offline educational content';
+        }
+        
+        function updateOfflineStatus() {
+            const offlineData = JSON.parse(localStorage.getItem('offlineReports') || '[]');
+            const statusElement = document.getElementById('offlineStats');
+            if (statusElement) {
+                statusElement.innerHTML = `
+                    <p>📊 Total offline reports: ${offlineData.length}</p>
+                    <p>💾 Storage used: ${(JSON.stringify(offlineData).length / 1024).toFixed(2)} KB</p>
+                `;
+            }
+        }
+        
+        function updateConnectionStatus() {
+            const statusElement = document.getElementById('connectionStatus');
+            if (statusElement) {
+                statusElement.innerHTML = navigator.onLine ? 
+                    '<span style="color: #27ae60;">🌐 Online</span>' : 
+                    '<span style="color: #e74c3c;">📱 Offline</span>';
+            }
+            
+            const lastSync = localStorage.getItem('lastSync');
+            const lastSyncElement = document.getElementById('lastSync');
+            if (lastSyncElement && lastSync) {
+                lastSyncElement.textContent = `Last sync: ${new Date(lastSync).toLocaleString()}`;
+            }
+        }
+
+        function updateGPSLocation() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        const lat = position.coords.latitude.toFixed(6);
+                        const lng = position.coords.longitude.toFixed(6);
+                        const location = `${lat}, ${lng}`;
+                        
+                        localStorage.setItem('userLocation', location);
+                        document.getElementById('gpsLocation').textContent = `📍 Location: ${location}`;
+                        showMessage('📍 Location updated successfully', 'success');
+                    },
+                    (error) => {
+                        document.getElementById('gpsLocation').textContent = '❌ Location access denied';
+                        showMessage('❌ Unable to get location', 'error');
+                    }
+                );
+            } else {
+                document.getElementById('gpsLocation').textContent = '❌ GPS not supported';
+            }
+        }
+
+        function changeLanguage() {
+            const language = document.getElementById('languageSelect').value;
+            localStorage.setItem('selectedLanguage', language);
+            updateSMSMessage(); // Update SMS template when language changes
+        }
+
+        // Initialize app
+        window.onload = function() {
+            loadResourceDashboard();
+            updateOfflineStatus();
+            updateOfflineEducationStatus();
+            updateConnectionStatus();
+            updateGPSLocation();
+            
+            // Load saved language
+            const savedLanguage = localStorage.getItem('selectedLanguage');
+            if (savedLanguage) {
+                document.getElementById('languageSelect').value = savedLanguage;
+            }
+        };
+        
+        // Auto-refresh data every 30 seconds
+        setInterval(() => {
+            if (navigator.onLine) {
+                loadResourceDashboard();
+                loadSMSResponses();
+            }
+            updateConnectionStatus();
+        }, 30000);
+
+        // Offline support
+        window.addEventListener('online', () => {
+            showMessage('🌐 Back online! Syncing data...', 'success');
+            updateConnectionStatus();
+            syncOfflineData();
+            localStorage.setItem('lastSync', new Date().toISOString());
+        });
+
+        window.addEventListener('offline', () => {
+            showMessage('📱 Working offline. Data will sync when connected.', 'error');
+            updateConnectionStatus();
+        });
+    </script>
+</body>
+</html>
