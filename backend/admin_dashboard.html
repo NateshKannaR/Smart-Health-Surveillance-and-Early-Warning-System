@@ -187,6 +187,7 @@
     </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="data_bridge.js"></script>
     <script>
         // Initialize trend chart
         const ctx = document.getElementById('trendChart').getContext('2d');
@@ -240,14 +241,34 @@
 
         // Functions
         function updatePrediction() {
-            const diseases = ['Diarrhea', 'Cholera', 'Typhoid', 'Hepatitis A'];
-            const risks = ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'];
+            // Get real predictions from data bridge
+            const predictions = window.healthDataBridge.getPredictions();
             
-            document.getElementById('predicted-disease').textContent = diseases[Math.floor(Math.random() * diseases.length)];
-            document.getElementById('risk-level').textContent = risks[Math.floor(Math.random() * risks.length)];
-            document.getElementById('confidence').textContent = Math.floor(Math.random() * 40 + 60) + '%';
+            if (predictions && predictions.predictedDisease) {
+                document.getElementById('predicted-disease').textContent = predictions.predictedDisease;
+                document.getElementById('risk-level').textContent = predictions.riskLevel;
+                document.getElementById('confidence').textContent = predictions.confidence + '%';
+                document.getElementById('timeline').textContent = predictions.timeline;
+            } else {
+                // Fallback to mock data
+                const diseases = ['Diarrhea', 'Cholera', 'Typhoid', 'Hepatitis A'];
+                const risks = ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'];
+                
+                document.getElementById('predicted-disease').textContent = diseases[Math.floor(Math.random() * diseases.length)];
+                document.getElementById('risk-level').textContent = risks[Math.floor(Math.random() * risks.length)];
+                document.getElementById('confidence').textContent = Math.floor(Math.random() * 40 + 60) + '%';
+            }
             
-            alert('AI prediction updated successfully!');
+            showMessage('AI prediction updated successfully!');
+        }
+        
+        function showMessage(text) {
+            // Create a temporary message element
+            const msg = document.createElement('div');
+            msg.style.cssText = 'position: fixed; top: 20px; right: 20px; background: #27ae60; color: white; padding: 15px; border-radius: 8px; z-index: 1000;';
+            msg.textContent = text;
+            document.body.appendChild(msg);
+            setTimeout(() => msg.remove(), 3000);
         }
 
         function allocateResources() {
@@ -262,17 +283,64 @@
             window.open('map_integration.html', '_blank');
         }
 
+        // Subscribe to data bridge updates
+        window.healthDataBridge.subscribe((eventType, data) => {
+            if (eventType === 'dataSync') {
+                updateDashboardData(data);
+            } else if (eventType === 'predictionUpdated') {
+                updatePredictionDisplay(data);
+            } else if (eventType === 'healthReportAdded') {
+                updateReportsCount();
+            }
+        });
+        
+        function updateDashboardData(data) {
+            if (data.statistics) {
+                document.getElementById('total-reports').textContent = data.statistics.totalReports || 0;
+                document.getElementById('active-alerts').textContent = data.statistics.activeAlerts || 0;
+                document.getElementById('water-sources').textContent = data.statistics.waterSources || 0;
+            }
+            
+            // Update hotspots
+            if (data.hotspots && data.hotspots.length > 0) {
+                updateHotspotsDisplay(data.hotspots);
+            }
+            
+            document.getElementById('last-update').textContent = 'Just now';
+        }
+        
+        function updatePredictionDisplay(predictions) {
+            document.getElementById('predicted-disease').textContent = predictions.predictedDisease;
+            document.getElementById('risk-level').textContent = predictions.riskLevel;
+            document.getElementById('confidence').textContent = predictions.confidence + '%';
+            document.getElementById('timeline').textContent = predictions.timeline;
+        }
+        
+        function updateHotspotsDisplay(hotspots) {
+            const container = document.getElementById('hotspots-list');
+            container.innerHTML = hotspots.slice(0, 3).map(hotspot => `
+                <div style="margin-bottom: 10px; padding: 10px; background: rgba(255,255,255,0.2); border-radius: 6px;">
+                    <strong>${hotspot.location}:</strong> ${hotspot.caseCount} cases (${hotspot.riskLevel} Risk)
+                </div>
+            `).join('');
+        }
+        
+        function updateReportsCount() {
+            const currentCount = parseInt(document.getElementById('total-reports').textContent) || 0;
+            document.getElementById('total-reports').textContent = currentCount + 1;
+        }
+        
         // Auto-refresh data
         setInterval(() => {
-            document.getElementById('last-update').textContent = 'Just now';
-            // In real app, fetch fresh data from API
+            window.healthDataBridge.syncData();
         }, 30000);
-
-        // Simulate real-time updates
-        setInterval(() => {
-            const reports = document.getElementById('total-reports');
-            reports.textContent = parseInt(reports.textContent) + Math.floor(Math.random() * 3);
-        }, 60000);
+        
+        // Initialize dashboard with existing data
+        window.onload = function() {
+            const existingData = window.healthDataBridge.data;
+            updateDashboardData(existingData);
+            updatePrediction();
+        };
     </script>
 </body>
 </html>

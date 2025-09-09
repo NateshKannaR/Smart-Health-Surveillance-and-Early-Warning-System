@@ -582,6 +582,7 @@
         </div>
     </div>
 
+    <script src="data_bridge.js"></script>
     <script>
         const API_URL = 'http://localhost:8000/api';
         
@@ -825,7 +826,9 @@
                 severity: 'mild',
                 location: localStorage.getItem('userLocation') || 'Community Report',
                 patient_age: 25,
-                patient_gender: 'unknown'
+                patient_gender: 'unknown',
+                timestamp: new Date().toISOString(),
+                coordinates: getCurrentCoordinates()
             };
             
             try {
@@ -838,6 +841,10 @@
                     
                     if (response.ok) {
                         showMessage(`${symptom} report submitted successfully!`, 'success');
+                        // Update dashboard data immediately
+                        syncWithDashboard();
+                        // Trigger AI prediction update
+                        triggerPredictionUpdate(reportData);
                     } else {
                         throw new Error('Server error');
                     }
@@ -850,6 +857,31 @@
                 saveOfflineReport(reportData);
                 showMessage(`${symptom} report saved offline.`, 'success');
             }
+        }
+        
+        function getCurrentCoordinates() {
+            const location = localStorage.getItem('userLocation');
+            if (location && location.includes(',')) {
+                const [lat, lng] = location.split(',').map(coord => parseFloat(coord.trim()));
+                return { lat, lng };
+            }
+            return null;
+        }
+        
+        function triggerPredictionUpdate(reportData) {
+            // Send data to AI prediction engine
+            const predictionData = {
+                newReport: reportData,
+                existingReports: JSON.parse(localStorage.getItem('offlineReports') || '[]'),
+                location: reportData.location,
+                timestamp: reportData.timestamp
+            };
+            
+            // Store for AI processing
+            localStorage.setItem('predictionInput', JSON.stringify(predictionData));
+            
+            // Trigger prediction update event
+            window.dispatchEvent(new CustomEvent('triggerPrediction', { detail: predictionData }));
         }
         
         // Offline Data Management
@@ -1170,6 +1202,15 @@
         }
         
         function openAdminDashboard() {
+            // Pass current data to admin dashboard
+            const currentData = {
+                reports: localStorage.getItem('offlineReports') || '[]',
+                location: localStorage.getItem('userLocation') || 'Unknown',
+                language: localStorage.getItem('selectedLanguage') || 'en'
+            };
+            
+            // Store data for admin dashboard to access
+            localStorage.setItem('mobileAppData', JSON.stringify(currentData));
             window.open('admin_dashboard.html', '_blank');
         }
 
@@ -1475,7 +1516,28 @@
                 document.getElementById('languageSelect').value = savedLanguage;
                 updateSMSMessage();
             }
+            
+            // Sync data with dashboard components
+            syncWithDashboard();
         };
+        
+        // Sync data with dashboard components
+        function syncWithDashboard() {
+            const dashboardData = {
+                totalReports: document.getElementById('total-reports')?.textContent || '0',
+                activeAlerts: document.getElementById('active-alerts')?.textContent || '0',
+                waterSources: document.getElementById('water-sources')?.textContent || '0',
+                lastUpdate: new Date().toISOString(),
+                userLocation: localStorage.getItem('userLocation'),
+                offlineReports: JSON.parse(localStorage.getItem('offlineReports') || '[]')
+            };
+            
+            // Store for admin dashboard and map integration
+            localStorage.setItem('healthSurveillanceData', JSON.stringify(dashboardData));
+            
+            // Trigger custom event for real-time updates
+            window.dispatchEvent(new CustomEvent('healthDataUpdate', { detail: dashboardData }));
+        }
         
         // Auto-refresh data every 30 seconds
         setInterval(() => {

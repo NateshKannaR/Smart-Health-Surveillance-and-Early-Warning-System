@@ -113,6 +113,10 @@ async def enhanced_mobile_app():
 async def enhanced_features_app():
     return FileResponse('enhanced_mobile_features.html')
 
+@app.get("/enhanced_map")
+async def enhanced_map():
+    return FileResponse('enhanced_map.html')
+
 @app.get("/")
 async def root():
     return {"message": "Smart Health Surveillance System API"}
@@ -256,6 +260,33 @@ async def manual_trigger_prediction(location: str):
     result = await trigger_outbreak_prediction(location)
     return result
 
+@app.post("/api/force-email-test/{location}")
+async def force_email_test(location: str):
+    """Force trigger email for testing with mock high-risk prediction"""
+    try:
+        from services.email_service import EmailService
+        email_service = EmailService()
+        
+        # Create mock high-risk prediction
+        mock_prediction = {
+            'location': location,
+            'disease': 'cholera',
+            'risk_score': 0.85,  # High risk
+            'predicted_cases': 15,
+            'confidence': 0.78,
+            'factors': '["high_water_contamination", "severe_cases_present", "monsoon_season"]'
+        }
+        
+        email_result = email_service.send_risk_alert("niswan0077@gmail.com", mock_prediction)
+        return {
+            "status": "success",
+            "location": location,
+            "email_result": email_result,
+            "prediction": mock_prediction
+        }
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
 @app.get("/api/water/sources")
 async def get_water_sources():
     try:
@@ -381,6 +412,54 @@ async def update_alert(alert_id: int, request: Request):
         conn.commit()
         conn.close()
         return {"status": "success"}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+@app.delete("/api/alerts/{alert_id}")
+async def delete_alert(alert_id: int):
+    try:
+        conn = sqlite3.connect("health_surveillance.db")
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM alerts WHERE id = ?", (alert_id,))
+        conn.commit()
+        conn.close()
+        return {"status": "success", "message": "Alert deleted successfully"}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+@app.delete("/api/health/reports/{report_id}")
+async def delete_health_report(report_id: int):
+    try:
+        conn = sqlite3.connect("health_surveillance.db")
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM health_reports WHERE id = ?", (report_id,))
+        conn.commit()
+        conn.close()
+        return {"status": "success", "message": "Health report deleted successfully"}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+@app.delete("/api/water/sources/{source_id}")
+async def delete_water_source(source_id: int):
+    try:
+        conn = sqlite3.connect("health_surveillance.db")
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM water_quality_reports WHERE id = ?", (source_id,))
+        conn.commit()
+        conn.close()
+        return {"status": "success", "message": "Water source deleted successfully"}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+@app.put("/api/health/reports/{report_id}/cure")
+async def mark_patient_cured(report_id: int):
+    try:
+        conn = sqlite3.connect("health_surveillance.db")
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM health_reports WHERE id = ?", (report_id,))
+        conn.commit()
+        conn.close()
+        return {"status": "success", "message": "Patient marked as cured"}
     except Exception as e:
         return {"status": "error", "message": str(e)}
 
@@ -688,20 +767,35 @@ async def trigger_outbreak_prediction(location: str):
                 try:
                     from services.email_service import EmailService
                     email_service = EmailService()
-                    email_result = email_service.send_risk_alert("niswan0077@gmail.com", prediction)
+                    
+                    # Format prediction data for email
+                    email_prediction_data = {
+                        'location': location,
+                        'disease': prediction['disease'],
+                        'risk_score': prediction['risk_score'],
+                        'predicted_cases': prediction['predicted_cases'],
+                        'confidence': prediction['confidence'],
+                        'factors': str(prediction['factors'])  # Convert to string for email
+                    }
+                    
+                    email_result = email_service.send_risk_alert("niswan0077@gmail.com", email_prediction_data)
                     prediction['email_sent'] = email_result['status'] == 'success'
+                    prediction['email_result'] = email_result
                     print(f"Email alert sent: {email_result['status']} for {location} (Risk: {prediction['risk_score']:.1%})")
+                    print(f"Email details: {email_result.get('message', 'No message')}")
                 except Exception as e:
                     print(f"Email failed: {str(e)}")
                     prediction['email_sent'] = False
+                    prediction['email_error'] = str(e)
             
+            prediction['alert_generated'] = True
             return prediction
         
-        return {'alert_generated': False}
+        return {'alert_generated': False, 'message': 'Insufficient data for prediction'}
         
     except Exception as e:
         print(f"Prediction error: {e}")
-        return {'alert_generated': False}
+        return {'alert_generated': False, 'error': str(e)}
 
 # Emergency Alert System
 @app.post("/api/emergency/alert")
@@ -936,16 +1030,34 @@ async def get_sensor_reading(sensor_id: str):
 
 # Test email alert endpoint
 @app.get("/api/test-email")
-async def test_email_alert(email: str = "test@example.com"):
+async def test_email_alert(email: str = "niswan0077@gmail.com"):
     """Test email alert functionality"""
     try:
-        alert_request = EmailAlertRequest(
-            email=email,
-            subject="Health Alert Test",
-            message="This is a test health alert from the surveillance system.",
-            alert_type="test"
-        )
-        result = await send_email_alert(alert_request)
+        from services.email_service import EmailService
+        email_service = EmailService()
+        
+        # Test with sample prediction data
+        test_prediction = {
+            'location': 'Delhi',
+            'disease': 'cholera',
+            'risk_score': 0.75,
+            'predicted_cases': 12,
+            'confidence': 0.85,
+            'factors': '["high_water_contamination", "monsoon_season"]'
+        }
+        
+        result = email_service.send_risk_alert(email, test_prediction)
+        return result
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+@app.get("/api/test-email-simple")
+async def test_simple_email(email: str = "niswan0077@gmail.com"):
+    """Simple email test"""
+    try:
+        from services.email_service import EmailService
+        email_service = EmailService()
+        result = email_service.send_test_email(email)
         return result
     except Exception as e:
         return {"status": "error", "message": str(e)}
