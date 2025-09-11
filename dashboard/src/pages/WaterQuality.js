@@ -1,4 +1,36 @@
 import React, { useState, useEffect } from 'react';
+import {
+  Container,
+  Typography,
+  Box,
+  Paper,
+  Grid,
+  Card,
+  CardContent,
+  Chip,
+  Button,
+  IconButton,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Alert,
+  AlertTitle,
+  LinearProgress
+} from '@mui/material';
+import {
+  WaterDrop,
+  Delete,
+  Science,
+  Thermostat,
+  LocationOn,
+  CalendarToday,
+  Refresh,
+  CheckCircle,
+  Warning
+} from '@mui/icons-material';
+import LoadingScreen from '../components/LoadingScreen';
+import StatusCard from '../components/StatusCard';
 
 const WaterQuality = () => {
   const [waterSources, setWaterSources] = useState([]);
@@ -24,8 +56,18 @@ const WaterQuality = () => {
     }
   };
 
-  const deleteWaterSource = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this water source report?')) return;
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [selectedSource, setSelectedSource] = useState(null);
+
+  const handleDeleteClick = (source) => {
+    setSelectedSource(source);
+    setDeleteDialogOpen(true);
+  };
+
+  const deleteWaterSource = async () => {
+    if (!selectedSource) return;
+    
+    const id = selectedSource.id;
     
     try {
       const response = await fetch(`http://localhost:8000/api/water/sources/${id}`, {
@@ -35,162 +77,323 @@ const WaterQuality = () => {
       const result = await response.json();
       
       if (response.ok && result.status === 'success') {
-        // Remove from UI immediately
         setWaterSources(waterSources.filter(w => w.id !== id));
-        alert('✅ Water source report deleted successfully');
-        // Refresh data after a short delay
         setTimeout(() => fetchWaterSources(), 500);
-      } else {
-        alert('❌ Failed to delete water source report: ' + (result.message || 'Unknown error'));
       }
     } catch (error) {
       console.error('Delete error:', error);
-      alert('❌ Error deleting water source report: ' + error.message);
+    } finally {
+      setDeleteDialogOpen(false);
+      setSelectedSource(null);
     }
   };
 
-  if (loading) return <div style={{color: 'white', textAlign: 'center', padding: '50px'}}>Loading water sources...</div>;
+  const getPHColor = (ph) => {
+    if (ph >= 6.5 && ph <= 8.5) return 'success';
+    return 'error';
+  };
+
+  const getTurbidityColor = (turbidity) => {
+    if (turbidity <= 5) return 'success';
+    return 'error';
+  };
+
+  const getBacteriaColor = (count) => {
+    if (count <= 10) return 'success';
+    return 'error';
+  };
+
+  if (loading) return <LoadingScreen message="Loading Water Quality Data" />;
 
   const safeWater = waterSources.filter(w => w.is_safe);
   const contaminatedWater = waterSources.filter(w => !w.is_safe);
 
   return (
-    <div style={{padding: '20px', color: 'white'}}>
-      <h1 style={{textAlign: 'center', marginBottom: '30px'}}>💧 Water Quality Management</h1>
+    <Container maxWidth="xl" sx={{ mt: 2, mb: 4 }}>
+      <Box sx={{ mb: 4 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+          <Box>
+            <Typography 
+              variant="h4" 
+              sx={{ 
+                fontWeight: 700, 
+                color: 'text.primary',
+                mb: 1,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1
+              }}
+            >
+              <WaterDrop color="primary" />
+              Water Quality Management
+            </Typography>
+            <Typography 
+              variant="body1" 
+              color="text.secondary"
+              sx={{ fontWeight: 500 }}
+            >
+              Monitor water source safety and quality parameters across all locations
+            </Typography>
+          </Box>
+          <Button
+            variant="outlined"
+            startIcon={<Refresh />}
+            onClick={fetchWaterSources}
+            sx={{ fontWeight: 600 }}
+          >
+            Refresh
+          </Button>
+        </Box>
+      </Box>
       
-      <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '20px', marginBottom: '30px'}}>
-        <div style={{background: 'rgba(46, 204, 113, 0.2)', borderRadius: '15px', padding: '20px', textAlign: 'center'}}>
-          <div style={{fontSize: '2rem', fontWeight: 'bold', color: '#27ae60'}}>{safeWater.length}</div>
-          <div>Safe Sources</div>
-        </div>
-        <div style={{background: 'rgba(231, 76, 60, 0.2)', borderRadius: '15px', padding: '20px', textAlign: 'center'}}>
-          <div style={{fontSize: '2rem', fontWeight: 'bold', color: '#e74c3c'}}>{contaminatedWater.length}</div>
-          <div>Contaminated Sources</div>
-        </div>
-        <div style={{background: 'rgba(52, 152, 219, 0.2)', borderRadius: '15px', padding: '20px', textAlign: 'center'}}>
-          <div style={{fontSize: '2rem', fontWeight: 'bold', color: '#3498db'}}>{waterSources.length}</div>
-          <div>Total Sources</div>
-        </div>
-      </div>
+      {/* Summary Cards */}
+      <Grid container spacing={3} sx={{ mb: 4 }}>
+        <Grid item xs={12} sm={6} lg={3}>
+          <StatusCard
+            title="Safe Water Sources"
+            value={safeWater.length}
+            color="#10b981"
+            icon={<CheckCircle sx={{ fontSize: 28 }} />}
+            progress={waterSources.length > 0 ? (safeWater.length / waterSources.length) * 100 : 0}
+            variant="accent"
+          />
+        </Grid>
+        <Grid item xs={12} sm={6} lg={3}>
+          <StatusCard
+            title="Contaminated Sources"
+            value={contaminatedWater.length}
+            color="#ef4444"
+            icon={<Warning sx={{ fontSize: 28 }} />}
+            variant="accent"
+          />
+        </Grid>
+        <Grid item xs={12} sm={6} lg={3}>
+          <StatusCard
+            title="Total Sources Monitored"
+            value={waterSources.length}
+            color="#06b6d4"
+            icon={<WaterDrop sx={{ fontSize: 28 }} />}
+            variant="accent"
+          />
+        </Grid>
+        <Grid item xs={12} sm={6} lg={3}>
+          <StatusCard
+            title="Safety Rate"
+            value={`${waterSources.length > 0 ? ((safeWater.length / waterSources.length) * 100).toFixed(1) : 0}%`}
+            color="#3b82f6"
+            icon={<Science sx={{ fontSize: 28 }} />}
+            variant="accent"
+          />
+        </Grid>
+      </Grid>
 
-      <div style={{
-        background: 'rgba(255,255,255,0.1)', 
-        borderRadius: '20px', 
-        padding: '20px'
-      }}>
-        <h3 style={{marginBottom: '20px'}}>Water Source Reports ({waterSources.length})</h3>
+      <Paper sx={{ p: 3 }}>
+        <Typography 
+          variant="h6" 
+          sx={{ 
+            fontWeight: 600, 
+            mb: 3,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 1
+          }}
+        >
+          Water Source Reports ({waterSources.length})
+        </Typography>
         
         {waterSources.length === 0 ? (
-          <div style={{textAlign: 'center', padding: '40px', color: 'rgba(255,255,255,0.7)'}}>
-            No water source reports available
-          </div>
+          <Alert severity="info" sx={{ textAlign: 'center' }}>
+            <AlertTitle>No Data Available</AlertTitle>
+            No water source reports found in the system
+          </Alert>
         ) : (
-          <div style={{display: 'grid', gap: '15px'}}>
+          <Grid container spacing={2}>
             {waterSources.map(source => (
-              <div key={source.id} style={{
-                background: 'rgba(255,255,255,0.1)',
-                borderRadius: '12px',
-                padding: '20px',
-                borderLeft: `4px solid ${source.is_safe ? '#2ecc71' : '#e74c3c'}`
-              }}>
-                <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start'}}>
-                  <div style={{flex: 1}}>
-                    <div style={{display: 'flex', gap: '15px', marginBottom: '10px'}}>
-                      <span style={{
-                        background: source.is_safe ? '#2ecc71' : '#e74c3c',
-                        color: 'white',
-                        padding: '4px 12px',
-                        borderRadius: '15px',
-                        fontSize: '12px',
-                        fontWeight: 'bold'
-                      }}>
-                        {source.is_safe ? '✅ SAFE' : '❌ CONTAMINATED'}
-                      </span>
-                      <span style={{
-                        background: 'rgba(255,255,255,0.2)',
-                        padding: '4px 12px',
-                        borderRadius: '15px',
-                        fontSize: '12px'
-                      }}>
-                        ID: {source.id}
-                      </span>
-                    </div>
-                    
-                    <h4 style={{margin: '10px 0', fontSize: '18px'}}>
-                      📍 {source.location}
-                    </h4>
-                    
-                    <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '15px', marginTop: '15px'}}>
-                      <div>
-                        <strong>🧪 pH Level:</strong><br/>
-                        <span style={{color: getPHColor(source.ph_level)}}>{source.ph_level}</span>
-                        <small style={{display: 'block', opacity: 0.7}}>(Safe: 6.5-8.5)</small>
-                      </div>
-                      <div>
-                        <strong>🌊 Turbidity:</strong><br/>
-                        <span style={{color: getTurbidityColor(source.turbidity)}}>{source.turbidity} NTU</span>
-                        <small style={{display: 'block', opacity: 0.7}}>(Safe: ≤5)</small>
-                      </div>
-                      <div>
-                        <strong>🦠 Bacteria:</strong><br/>
-                        <span style={{color: getBacteriaColor(source.bacterial_count)}}>{source.bacterial_count} CFU/ml</span>
-                        <small style={{display: 'block', opacity: 0.7}}>(Safe: ≤10)</small>
-                      </div>
-                      <div>
-                        <strong>🌡️ Temperature:</strong><br/>
-                        {source.temperature}°C
-                      </div>
-                      <div>
-                        <strong>💧 Source Type:</strong><br/>
-                        {source.source_type?.toUpperCase()}
-                      </div>
-                      <div>
-                        <strong>📅 Tested:</strong><br/>
-                        {new Date(source.tested_at).toLocaleDateString()}
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div style={{marginLeft: '20px'}}>
-                    <button
-                      onClick={() => deleteWaterSource(source.id)}
-                      style={{
-                        background: 'linear-gradient(45deg, #e74c3c, #c0392b)',
-                        color: 'white',
-                        border: 'none',
-                        padding: '8px 16px',
-                        borderRadius: '8px',
-                        cursor: 'pointer',
-                        fontSize: '12px',
-                        fontWeight: 'bold'
-                      }}
-                    >
-                      🗑️ Delete
-                    </button>
-                  </div>
-                </div>
-              </div>
+              <Grid item xs={12} key={source.id}>
+                <Card 
+                  sx={{ 
+                    border: '1px solid',
+                    borderColor: source.is_safe ? 'success.light' : 'error.light',
+                    borderLeftWidth: 4,
+                    borderLeftColor: source.is_safe ? 'success.main' : 'error.main'
+                  }}
+                >
+                  <CardContent>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                      <Box sx={{ flex: 1 }}>
+                        <Box sx={{ display: 'flex', gap: 2, mb: 2, alignItems: 'center' }}>
+                          <Chip
+                            icon={source.is_safe ? <CheckCircle /> : <Warning />}
+                            label={source.is_safe ? 'SAFE' : 'CONTAMINATED'}
+                            color={source.is_safe ? 'success' : 'error'}
+                            variant="outlined"
+                            sx={{ fontWeight: 600 }}
+                          />
+                          <Chip
+                            label={`ID: ${source.id}`}
+                            variant="outlined"
+                            size="small"
+                            sx={{ fontWeight: 500 }}
+                          />
+                        </Box>
+                        
+                        <Typography 
+                          variant="h6" 
+                          sx={{ 
+                            fontWeight: 600, 
+                            mb: 2,
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 1
+                          }}
+                        >
+                          <LocationOn color="action" sx={{ fontSize: 20 }} />
+                          {source.location}
+                        </Typography>
+                        
+                        <Grid container spacing={2}>
+                          <Grid item xs={12} sm={6} md={2}>
+                            <Box sx={{ textAlign: 'center', p: 1.5, backgroundColor: 'grey.50', borderRadius: 1 }}>
+                              <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>
+                                pH LEVEL
+                              </Typography>
+                              <Typography 
+                                variant="h6" 
+                                sx={{ 
+                                  fontWeight: 700,
+                                  color: `${getPHColor(source.ph_level)}.main`
+                                }}
+                              >
+                                {source.ph_level}
+                              </Typography>
+                              <Typography variant="caption" color="text.secondary">
+                                (Safe: 6.5-8.5)
+                              </Typography>
+                            </Box>
+                          </Grid>
+                          <Grid item xs={12} sm={6} md={2}>
+                            <Box sx={{ textAlign: 'center', p: 1.5, backgroundColor: 'grey.50', borderRadius: 1 }}>
+                              <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>
+                                TURBIDITY
+                              </Typography>
+                              <Typography 
+                                variant="h6" 
+                                sx={{ 
+                                  fontWeight: 700,
+                                  color: `${getTurbidityColor(source.turbidity)}.main`
+                                }}
+                              >
+                                {source.turbidity}
+                              </Typography>
+                              <Typography variant="caption" color="text.secondary">
+                                NTU (Safe: ≤5)
+                              </Typography>
+                            </Box>
+                          </Grid>
+                          <Grid item xs={12} sm={6} md={2}>
+                            <Box sx={{ textAlign: 'center', p: 1.5, backgroundColor: 'grey.50', borderRadius: 1 }}>
+                              <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>
+                                BACTERIA
+                              </Typography>
+                              <Typography 
+                                variant="h6" 
+                                sx={{ 
+                                  fontWeight: 700,
+                                  color: `${getBacteriaColor(source.bacterial_count)}.main`
+                                }}
+                              >
+                                {source.bacterial_count}
+                              </Typography>
+                              <Typography variant="caption" color="text.secondary">
+                                CFU/ml (Safe: ≤10)
+                              </Typography>
+                            </Box>
+                          </Grid>
+                          <Grid item xs={12} sm={6} md={2}>
+                            <Box sx={{ textAlign: 'center', p: 1.5, backgroundColor: 'grey.50', borderRadius: 1 }}>
+                              <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>
+                                TEMPERATURE
+                              </Typography>
+                              <Typography variant="h6" sx={{ fontWeight: 700, color: 'text.primary' }}>
+                                {source.temperature}°C
+                              </Typography>
+                            </Box>
+                          </Grid>
+                          <Grid item xs={12} sm={6} md={2}>
+                            <Box sx={{ textAlign: 'center', p: 1.5, backgroundColor: 'grey.50', borderRadius: 1 }}>
+                              <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>
+                                SOURCE TYPE
+                              </Typography>
+                              <Typography variant="body2" sx={{ fontWeight: 600, color: 'text.primary' }}>
+                                {source.source_type?.toUpperCase()}
+                              </Typography>
+                            </Box>
+                          </Grid>
+                          <Grid item xs={12} sm={6} md={2}>
+                            <Box sx={{ textAlign: 'center', p: 1.5, backgroundColor: 'grey.50', borderRadius: 1 }}>
+                              <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>
+                                TESTED DATE
+                              </Typography>
+                              <Typography variant="body2" sx={{ fontWeight: 600, color: 'text.primary' }}>
+                                {new Date(source.tested_at).toLocaleDateString()}
+                              </Typography>
+                            </Box>
+                          </Grid>
+                        </Grid>
+                      </Box>
+                      
+                      <IconButton
+                        onClick={() => handleDeleteClick(source)}
+                        color="error"
+                        sx={{ 
+                          ml: 2,
+                          '&:hover': {
+                            backgroundColor: 'error.light',
+                            color: 'white'
+                          }
+                        }}
+                      >
+                        <Delete />
+                      </IconButton>
+                    </Box>
+                  </CardContent>
+                </Card>
+              </Grid>
             ))}
-          </div>
+          </Grid>
         )}
-      </div>
-    </div>
+      </Paper>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}>
+        <DialogTitle>Delete Water Source Report</DialogTitle>
+        <DialogContent>
+          <Typography>
+            Are you sure you want to delete this water source report? This action cannot be undone.
+          </Typography>
+          {selectedSource && (
+            <Box sx={{ mt: 2, p: 2, backgroundColor: 'grey.100', borderRadius: 1 }}>
+              <Typography variant="body2" color="text.secondary">
+                <strong>Source ID:</strong> {selectedSource.id}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                <strong>Location:</strong> {selectedSource.location}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                <strong>Status:</strong> {selectedSource.is_safe ? 'Safe' : 'Contaminated'}
+              </Typography>
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDeleteDialogOpen(false)}>Cancel</Button>
+          <Button onClick={deleteWaterSource} color="error" variant="contained">
+            Delete Report
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </Container>
   );
-};
-
-const getPHColor = (ph) => {
-  if (ph >= 6.5 && ph <= 8.5) return '#2ecc71';
-  return '#e74c3c';
-};
-
-const getTurbidityColor = (turbidity) => {
-  if (turbidity <= 5) return '#2ecc71';
-  return '#e74c3c';
-};
-
-const getBacteriaColor = (count) => {
-  if (count <= 10) return '#2ecc71';
-  return '#e74c3c';
 };
 
 export default WaterQuality;

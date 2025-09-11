@@ -1,4 +1,33 @@
 import React, { useState, useEffect } from 'react';
+import {
+  Container,
+  Typography,
+  Box,
+  Paper,
+  Grid,
+  Card,
+  CardContent,
+  Chip,
+  Button,
+  IconButton,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Alert,
+  AlertTitle
+} from '@mui/material';
+import {
+  HealthAndSafety,
+  Delete,
+  CheckCircle,
+  Person,
+  LocationOn,
+  CalendarToday,
+  Refresh
+} from '@mui/icons-material';
+import LoadingScreen from '../components/LoadingScreen';
+import StatusCard from '../components/StatusCard';
 
 const HealthReports = () => {
   const [reports, setReports] = useState([]);
@@ -24,8 +53,24 @@ const HealthReports = () => {
     }
   };
 
-  const deleteReport = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this report?')) return;
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [cureDialogOpen, setCureDialogOpen] = useState(false);
+  const [selectedReport, setSelectedReport] = useState(null);
+
+  const handleDeleteClick = (report) => {
+    setSelectedReport(report);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleCureClick = (report) => {
+    setSelectedReport(report);
+    setCureDialogOpen(true);
+  };
+
+  const deleteReport = async () => {
+    if (!selectedReport) return;
+    
+    const id = selectedReport.id;
     
     try {
       const response = await fetch(`http://localhost:8000/api/health/reports/${id}`, {
@@ -35,22 +80,21 @@ const HealthReports = () => {
       const result = await response.json();
       
       if (response.ok && result.status === 'success') {
-        // Remove from UI immediately
         setReports(reports.filter(r => r.id !== id));
-        alert('✅ Report deleted successfully');
-        // Refresh data after a short delay
         setTimeout(() => fetchReports(), 500);
-      } else {
-        alert('❌ Failed to delete report: ' + (result.message || 'Unknown error'));
       }
     } catch (error) {
       console.error('Delete error:', error);
-      alert('❌ Error deleting report: ' + error.message);
+    } finally {
+      setDeleteDialogOpen(false);
+      setSelectedReport(null);
     }
   };
 
-  const markCured = async (id) => {
-    if (!window.confirm('Mark this patient as cured?')) return;
+  const markCured = async () => {
+    if (!selectedReport) return;
+    
+    const id = selectedReport.id;
     
     try {
       const response = await fetch(`http://localhost:8000/api/health/reports/${id}/cure`, {
@@ -60,143 +104,305 @@ const HealthReports = () => {
       const result = await response.json();
       
       if (response.ok && result.status === 'success') {
-        // Remove from UI immediately
         setReports(reports.filter(r => r.id !== id));
-        alert('✅ Patient marked as cured successfully');
-        // Refresh data after a short delay
         setTimeout(() => fetchReports(), 500);
-      } else {
-        alert('❌ Failed to mark patient as cured: ' + (result.message || 'Unknown error'));
       }
     } catch (error) {
       console.error('Cure error:', error);
-      alert('❌ Error updating patient status: ' + error.message);
+    } finally {
+      setCureDialogOpen(false);
+      setSelectedReport(null);
     }
   };
 
-  if (loading) return <div style={{color: 'white', textAlign: 'center', padding: '50px'}}>Loading reports...</div>;
+  if (loading) return <LoadingScreen message="Loading Health Reports" />;
+
+  const getSeverityColor = (severity) => {
+    switch (severity?.toLowerCase()) {
+      case 'critical': return 'error';
+      case 'severe': return 'error';
+      case 'high': return 'warning';
+      case 'moderate': return 'warning';
+      case 'medium': return 'info';
+      case 'mild': return 'success';
+      case 'low': return 'success';
+      default: return 'default';
+    }
+  };
+
+  const criticalReports = reports.filter(r => ['critical', 'severe'].includes(r.severity?.toLowerCase()));
+  const highReports = reports.filter(r => ['high', 'moderate'].includes(r.severity?.toLowerCase()));
+  const mediumReports = reports.filter(r => r.severity?.toLowerCase() === 'medium');
+  const lowReports = reports.filter(r => ['mild', 'low'].includes(r.severity?.toLowerCase()));
 
   return (
-    <div style={{padding: '20px', color: 'white'}}>
-      <h1 style={{textAlign: 'center', marginBottom: '30px'}}>🏥 Health Reports Management</h1>
+    <Container maxWidth="xl" sx={{ mt: 2, mb: 4 }}>
+      <Box sx={{ mb: 4 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+          <Box>
+            <Typography 
+              variant="h4" 
+              sx={{ 
+                fontWeight: 700, 
+                color: 'text.primary',
+                mb: 1,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1
+              }}
+            >
+              <HealthAndSafety color="primary" />
+              Health Reports Management
+            </Typography>
+            <Typography 
+              variant="body1" 
+              color="text.secondary"
+              sx={{ fontWeight: 500 }}
+            >
+              Monitor and manage active health cases and patient records
+            </Typography>
+          </Box>
+          <Button
+            variant="outlined"
+            startIcon={<Refresh />}
+            onClick={fetchReports}
+            sx={{ fontWeight: 600 }}
+          >
+            Refresh
+          </Button>
+        </Box>
+      </Box>
+
+      {/* Summary Cards */}
+      <Grid container spacing={3} sx={{ mb: 4 }}>
+        <Grid item xs={12} sm={6} lg={3}>
+          <StatusCard
+            title="Critical Cases"
+            value={criticalReports.length}
+            color="#ef4444"
+            icon={<HealthAndSafety sx={{ fontSize: 28 }} />}
+            variant="accent"
+          />
+        </Grid>
+        <Grid item xs={12} sm={6} lg={3}>
+          <StatusCard
+            title="High Priority"
+            value={highReports.length}
+            color="#f59e0b"
+            icon={<HealthAndSafety sx={{ fontSize: 28 }} />}
+            variant="accent"
+          />
+        </Grid>
+        <Grid item xs={12} sm={6} lg={3}>
+          <StatusCard
+            title="Medium Cases"
+            value={mediumReports.length}
+            color="#06b6d4"
+            icon={<HealthAndSafety sx={{ fontSize: 28 }} />}
+            variant="accent"
+          />
+        </Grid>
+        <Grid item xs={12} sm={6} lg={3}>
+          <StatusCard
+            title="Mild Cases"
+            value={lowReports.length}
+            color="#10b981"
+            icon={<HealthAndSafety sx={{ fontSize: 28 }} />}
+            variant="accent"
+          />
+        </Grid>
+      </Grid>
       
-      <div style={{
-        background: 'rgba(255,255,255,0.1)', 
-        borderRadius: '20px', 
-        padding: '20px'
-      }}>
-        <h3 style={{marginBottom: '20px'}}>Active Health Cases ({reports.length})</h3>
+      <Paper sx={{ p: 3 }}>
+        <Typography 
+          variant="h6" 
+          sx={{ 
+            fontWeight: 600, 
+            mb: 3,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 1
+          }}
+        >
+          Active Health Cases ({reports.length})
+        </Typography>
         
         {reports.length === 0 ? (
-          <div style={{textAlign: 'center', padding: '40px', color: 'rgba(255,255,255,0.7)'}}>
-            No active health reports
-          </div>
+          <Alert severity="info" sx={{ textAlign: 'center' }}>
+            <AlertTitle>No Active Cases</AlertTitle>
+            No active health reports found in the system
+          </Alert>
         ) : (
-          <div style={{display: 'grid', gap: '15px'}}>
+          <Grid container spacing={2}>
             {reports.map(report => (
-              <div key={report.id} style={{
-                background: 'rgba(255,255,255,0.1)',
-                borderRadius: '12px',
-                padding: '20px',
-                borderLeft: `4px solid ${getSeverityColor(report.severity)}`
-              }}>
-                <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start'}}>
-                  <div style={{flex: 1}}>
-                    <div style={{display: 'flex', gap: '15px', marginBottom: '10px'}}>
-                      <span style={{
-                        background: getSeverityColor(report.severity),
-                        color: 'white',
-                        padding: '4px 12px',
-                        borderRadius: '15px',
-                        fontSize: '12px',
-                        fontWeight: 'bold'
-                      }}>
-                        {report.severity?.toUpperCase()}
-                      </span>
-                      <span style={{
-                        background: 'rgba(255,255,255,0.2)',
-                        padding: '4px 12px',
-                        borderRadius: '15px',
-                        fontSize: '12px'
-                      }}>
-                        ID: {report.id}
-                      </span>
-                    </div>
-                    
-                    <h4 style={{margin: '10px 0', fontSize: '18px'}}>
-                      {report.disease?.replace('_', ' ').toUpperCase()}
-                    </h4>
-                    
-                    <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '10px', marginTop: '15px'}}>
-                      <div>
-                        <strong>📍 Location:</strong><br/>
-                        {report.location}
-                      </div>
-                      <div>
-                        <strong>👤 Patient:</strong><br/>
-                        Age: {report.patient_age || 'N/A'}, Gender: {report.patient_gender || 'N/A'}
-                      </div>
-                      <div>
-                        <strong>📅 Reported:</strong><br/>
-                        {new Date(report.reported_at).toLocaleDateString()}
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div style={{display: 'flex', flexDirection: 'column', gap: '10px', marginLeft: '20px'}}>
-                    <button
-                      onClick={() => markCured(report.id)}
-                      style={{
-                        background: 'linear-gradient(45deg, #2ecc71, #27ae60)',
-                        color: 'white',
-                        border: 'none',
-                        padding: '8px 16px',
-                        borderRadius: '8px',
-                        cursor: 'pointer',
-                        fontSize: '12px',
-                        fontWeight: 'bold'
-                      }}
-                    >
-                      ✅ Mark Cured
-                    </button>
-                    
-                    <button
-                      onClick={() => deleteReport(report.id)}
-                      style={{
-                        background: 'linear-gradient(45deg, #e74c3c, #c0392b)',
-                        color: 'white',
-                        border: 'none',
-                        padding: '8px 16px',
-                        borderRadius: '8px',
-                        cursor: 'pointer',
-                        fontSize: '12px',
-                        fontWeight: 'bold'
-                      }}
-                    >
-                      🗑️ Delete
-                    </button>
-                  </div>
-                </div>
-              </div>
+              <Grid item xs={12} key={report.id}>
+                <Card 
+                  sx={{ 
+                    border: '1px solid',
+                    borderColor: `${getSeverityColor(report.severity)}.light`,
+                    borderLeftWidth: 4,
+                    borderLeftColor: `${getSeverityColor(report.severity)}.main`
+                  }}
+                >
+                  <CardContent>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                      <Box sx={{ flex: 1 }}>
+                        <Box sx={{ display: 'flex', gap: 2, mb: 2, alignItems: 'center' }}>
+                          <Chip
+                            label={report.severity?.toUpperCase()}
+                            color={getSeverityColor(report.severity)}
+                            variant="outlined"
+                            sx={{ fontWeight: 600 }}
+                          />
+                          <Chip
+                            label={`ID: ${report.id}`}
+                            variant="outlined"
+                            size="small"
+                            sx={{ fontWeight: 500 }}
+                          />
+                        </Box>
+                        
+                        <Typography 
+                          variant="h6" 
+                          sx={{ 
+                            fontWeight: 600, 
+                            mb: 2,
+                            color: 'text.primary'
+                          }}
+                        >
+                          {report.disease?.replace('_', ' ').toUpperCase()}
+                        </Typography>
+                        
+                        <Grid container spacing={2}>
+                          <Grid item xs={12} sm={4}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                              <LocationOn color="action" sx={{ fontSize: 18 }} />
+                              <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 600 }}>
+                                Location
+                              </Typography>
+                            </Box>
+                            <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                              {report.location}
+                            </Typography>
+                          </Grid>
+                          <Grid item xs={12} sm={4}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                              <Person color="action" sx={{ fontSize: 18 }} />
+                              <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 600 }}>
+                                Patient
+                              </Typography>
+                            </Box>
+                            <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                              Age: {report.patient_age || 'N/A'}, Gender: {report.patient_gender || 'N/A'}
+                            </Typography>
+                          </Grid>
+                          <Grid item xs={12} sm={4}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                              <CalendarToday color="action" sx={{ fontSize: 18 }} />
+                              <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 600 }}>
+                                Reported
+                              </Typography>
+                            </Box>
+                            <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                              {new Date(report.reported_at).toLocaleDateString()}
+                            </Typography>
+                          </Grid>
+                        </Grid>
+                      </Box>
+                      
+                      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, ml: 2 }}>
+                        <Button
+                          variant="contained"
+                          color="success"
+                          size="small"
+                          startIcon={<CheckCircle />}
+                          onClick={() => handleCureClick(report)}
+                          sx={{ fontWeight: 600, fontSize: '0.75rem' }}
+                        >
+                          Mark Cured
+                        </Button>
+                        
+                        <IconButton
+                          color="error"
+                          onClick={() => handleDeleteClick(report)}
+                          sx={{ 
+                            '&:hover': {
+                              backgroundColor: 'error.light',
+                              color: 'white'
+                            }
+                          }}
+                        >
+                          <Delete />
+                        </IconButton>
+                      </Box>
+                    </Box>
+                  </CardContent>
+                </Card>
+              </Grid>
             ))}
-          </div>
+          </Grid>
         )}
-      </div>
-    </div>
-  );
-};
+      </Paper>
 
-const getSeverityColor = (severity) => {
-  switch (severity?.toLowerCase()) {
-    case 'critical': return '#e74c3c';
-    case 'severe': return '#e67e22';
-    case 'high': return '#f39c12';
-    case 'moderate': return '#f1c40f';
-    case 'medium': return '#3498db';
-    case 'mild': return '#2ecc71';
-    case 'low': return '#95a5a6';
-    default: return '#95a5a6';
-  }
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}>
+        <DialogTitle>Delete Health Report</DialogTitle>
+        <DialogContent>
+          <Typography>
+            Are you sure you want to delete this health report? This action cannot be undone.
+          </Typography>
+          {selectedReport && (
+            <Box sx={{ mt: 2, p: 2, backgroundColor: 'grey.100', borderRadius: 1 }}>
+              <Typography variant="body2" color="text.secondary">
+                <strong>Report ID:</strong> {selectedReport.id}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                <strong>Disease:</strong> {selectedReport.disease?.replace('_', ' ')}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                <strong>Location:</strong> {selectedReport.location}
+              </Typography>
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDeleteDialogOpen(false)}>Cancel</Button>
+          <Button onClick={deleteReport} color="error" variant="contained">
+            Delete Report
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Cure Confirmation Dialog */}
+      <Dialog open={cureDialogOpen} onClose={() => setCureDialogOpen(false)}>
+        <DialogTitle>Mark Patient as Cured</DialogTitle>
+        <DialogContent>
+          <Typography>
+            Are you sure you want to mark this patient as cured? This will remove the case from active reports.
+          </Typography>
+          {selectedReport && (
+            <Box sx={{ mt: 2, p: 2, backgroundColor: 'success.light', borderRadius: 1 }}>
+              <Typography variant="body2" color="success.dark">
+                <strong>Patient:</strong> Age {selectedReport.patient_age}, {selectedReport.patient_gender}
+              </Typography>
+              <Typography variant="body2" color="success.dark">
+                <strong>Disease:</strong> {selectedReport.disease?.replace('_', ' ')}
+              </Typography>
+              <Typography variant="body2" color="success.dark">
+                <strong>Location:</strong> {selectedReport.location}
+              </Typography>
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setCureDialogOpen(false)}>Cancel</Button>
+          <Button onClick={markCured} color="success" variant="contained">
+            Mark as Cured
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </Container>
+  );
 };
 
 export default HealthReports;

@@ -769,13 +769,15 @@ async def trigger_outbreak_prediction(location: str):
                     email_service = EmailService()
                     
                     # Format prediction data for email
+                    import json
+                    factors_str = prediction['factors'] if isinstance(prediction['factors'], str) else json.dumps(prediction['factors'])
                     email_prediction_data = {
                         'location': location,
                         'disease': prediction['disease'],
                         'risk_score': prediction['risk_score'],
                         'predicted_cases': prediction['predicted_cases'],
                         'confidence': prediction['confidence'],
-                        'factors': str(prediction['factors'])  # Convert to string for email
+                        'factors': factors_str
                     }
                     
                     email_result = email_service.send_risk_alert("niswan0077@gmail.com", email_prediction_data)
