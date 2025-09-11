@@ -1,0 +1,53 @@
+{
+  "system": {
+    "name": "Enhanced Health Surveillance System",
+    "version": "2.0.0",
+    "features": [
+      "Educational Modules",
+      "Offline Functionality",
+      "Community Volunteer Reporting",
+      "SMS-based Data Collection",
+      "Tribal Language Support",
+      "Resource Allocation Dashboard"
+    ]
+  },
+  "languages": {
+    "supported": [
+      "en",
+      "hi",
+      "as",
+      "bn",
+      "ne",
+      "mni",
+      "garo",
+      "khasi",
+      "mizo"
+    ],
+    "default": "en"
+  },
+  "sms": {
+    "enabled": true,
+    "gateway": "mock",
+    "templates": {
+      "health_survey": "Health Survey: Reply with HEALTH [symptoms] [location] [age]",
+      "water_quality": "Water Quality: Reply with WATER [location] [safe/unsafe] [source]",
+      "emergency": "EMERGENCY: {message}. Reply HELP for assistance."
+    }
+  },
+  "resources": {
+    "auto_approve_critical": true,
+    "default_allocation_timeout": 24,
+    "resource_types": [
+      "Medical Team",
+      "Water Testing Kit",
+      "Emergency Supplies",
+      "Vehicle",
+      "Medicine"
+    ]
+  },
+  "offline": {
+    "max_storage_mb": 50,
+    "auto_sync": true,
+    "sync_interval_minutes": 30
+  }
+}

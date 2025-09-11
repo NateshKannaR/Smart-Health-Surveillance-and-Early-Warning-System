@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Disease Hotspot Map</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        body { margin: 0; font-family: Arial, sans-serif; }
+        #map { height: 100vh; width: 100%; }
+        .legend {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            z-index: 1000;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        .popup-content {
+            font-size: 14px;
+            line-height: 1.4;
+        }
+        .risk-high { background: #e74c3c; }
+        .risk-medium { background: #f39c12; }
+        .risk-low { background: #27ae60; }
+        .water-contaminated { background: #8e44ad; }
+        .water-safe { background: #3498db; }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+    
+    <div class="legend">
+        <h4 style="margin: 0 0 10px 0;">Disease Hotspots</h4>
+        <div class="legend-item">
+            <div class="legend-color risk-high"></div>
+            <span>High Risk (>10 cases)</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-color risk-medium"></div>
+            <span>Medium Risk (5-10 cases)</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-color risk-low"></div>
+            <span>Low Risk (<5 cases)</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-color water-contaminated"></div>
+            <span>Contaminated Water</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-color water-safe"></div>
+            <span>Safe Water Source</span>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        // Initialize map centered on Northeast India
+        const map = L.map('map').setView([26.2006, 92.9376], 8);
+
+        // Add OpenStreetMap tiles
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+
+        // Sample disease hotspot data
+        const diseaseHotspots = [
+            {
+                lat: 26.1445, lng: 91.7362, 
+                location: "Guwahati Central", 
+                cases: 15, 
+                disease: "Diarrhea",
+                risk: "high"
+            },
+            {
+                lat: 27.4728, lng: 94.9120, 
+                location: "Dibrugarh", 
+                cases: 8, 
+                disease: "Cholera",
+                risk: "medium"
+            },
+            {
+                lat: 24.8333, lng: 92.7789, 
+                location: "Silchar", 
+                cases: 3, 
+                disease: "Typhoid",
+                risk: "low"
+            },
+            {
+                lat: 25.5788, lng: 91.8933, 
+                location: "Shillong", 
+                cases: 6, 
+                disease: "Hepatitis A",
+                risk: "medium"
+            }
+        ];
+
+        // Sample water source data
+        const waterSources = [
+            {
+                lat: 26.1500, lng: 91.7400, 
+                location: "Brahmaputra River - Guwahati", 
+                status: "contaminated",
+                ph: 8.5, turbidity: 12.3
+            },
+            {
+                lat: 27.4800, lng: 94.9200, 
+                location: "Dibrugarh Water Treatment", 
+                status: "safe",
+                ph: 7.2, turbidity: 2.1
+            },
+            {
+                lat: 24.8400, lng: 92.7800, 
+                location: "Silchar Municipal Water", 
+                status: "safe",
+                ph: 7.0, turbidity: 1.8
+            }
+        ];
+
+        // Add disease hotspot markers
+        diseaseHotspots.forEach(hotspot => {
+            const color = hotspot.risk === 'high' ? '#e74c3c' : 
+                         hotspot.risk === 'medium' ? '#f39c12' : '#27ae60';
+            
+            const marker = L.circleMarker([hotspot.lat, hotspot.lng], {
+                radius: Math.max(8, hotspot.cases),
+                fillColor: color,
+                color: '#fff',
+                weight: 2,
+                opacity: 1,
+                fillOpacity: 0.8
+            }).addTo(map);
+
+            marker.bindPopup(`
+                <div class="popup-content">
+                    <h4>${hotspot.location}</h4>
+                    <p><strong>Disease:</strong> ${hotspot.disease}</p>
+                    <p><strong>Cases:</strong> ${hotspot.cases}</p>
+                    <p><strong>Risk Level:</strong> ${hotspot.risk.toUpperCase()}</p>
+                    <p><strong>Action:</strong> ${getRecommendation(hotspot.risk)}</p>
+                </div>
+            `);
+        });
+
+        // Add water source markers
+        waterSources.forEach(source => {
+            const color = source.status === 'contaminated' ? '#8e44ad' : '#3498db';
+            const icon = source.status === 'contaminated' ? '⚠️' : '💧';
+            
+            const marker = L.marker([source.lat, source.lng], {
+                icon: L.divIcon({
+                    html: `<div style="background: ${color}; color: white; border-radius: 50%; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; font-size: 16px; border: 2px solid white;">${icon}</div>`,
+                    iconSize: [30, 30],
+                    className: 'custom-div-icon'
+                })
+            }).addTo(map);
+
+            marker.bindPopup(`
+                <div class="popup-content">
+                    <h4>${source.location}</h4>
+                    <p><strong>Status:</strong> ${source.status.toUpperCase()}</p>
+                    <p><strong>pH Level:</strong> ${source.ph}</p>
+                    <p><strong>Turbidity:</strong> ${source.turbidity} NTU</p>
+                    ${source.status === 'contaminated' ? 
+                        '<p style="color: #e74c3c;"><strong>⚠️ Avoid consumption</strong></p>' : 
+                        '<p style="color: #27ae60;"><strong>✅ Safe for consumption</strong></p>'
+                    }
+                </div>
+            `);
+        });
+
+        // Add prediction overlay
+        const predictionArea = L.polygon([
+            [26.0, 91.5],
+            [26.3, 91.5],
+            [26.3, 92.0],
+            [26.0, 92.0]
+        ], {
+            color: '#e74c3c',
+            fillColor: '#e74c3c',
+            fillOpacity: 0.2,
+            weight: 2,
+            dashArray: '5, 5'
+        }).addTo(map);
+
+        predictionArea.bindPopup(`
+            <div class="popup-content">
+                <h4>🤖 AI Prediction Zone</h4>
+                <p><strong>Predicted Outbreak:</strong> Diarrhea</p>
+                <p><strong>Risk Level:</strong> HIGH</p>
+                <p><strong>Timeline:</strong> Next 7-14 days</p>
+                <p><strong>Confidence:</strong> 78%</p>
+                <p style="color: #e74c3c;"><strong>⚠️ Immediate intervention required</strong></p>
+            </div>
+        `);
+
+        function getRecommendation(risk) {
+            switch(risk) {
+                case 'high': return 'Deploy medical teams, distribute ORS';
+                case 'medium': return 'Increase monitoring, hygiene campaigns';
+                case 'low': return 'Continue regular surveillance';
+                default: return 'Monitor situation';
+            }
+        }
+
+        // Auto-refresh data every 30 seconds (simulate real-time updates)
+        setInterval(() => {
+            console.log('Refreshing map data...');
+            // In real app, fetch new data from API and update markers
+        }, 30000);
+    </script>
+</body>
+</html>

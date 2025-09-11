@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enhanced Health Surveillance Map</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        body { 
+            margin: 0; 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        #map { 
+            height: 100vh; 
+            width: 100%; 
+        }
+        .legend {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(255,255,255,0.95);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+            z-index: 1000;
+            min-width: 250px;
+        }
+        .legend h4 {
+            margin: 0 0 15px 0;
+            color: #2c3e50;
+            font-size: 16px;
+            font-weight: bold;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            margin-right: 10px;
+            border: 2px solid white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        .contamination-zone {
+            width: 30px;
+            height: 15px;
+            background: rgba(231, 76, 60, 0.4);
+            border: 2px dashed #e74c3c;
+            border-radius: 8px;
+            margin-right: 10px;
+        }
+        .popup-content {
+            font-size: 14px;
+            line-height: 1.6;
+            max-width: 300px;
+        }
+        .popup-header {
+            font-weight: bold;
+            font-size: 16px;
+            margin-bottom: 10px;
+            color: #2c3e50;
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: bold;
+            margin: 2px;
+        }
+        .status-critical { background: #e74c3c; color: white; }
+        .status-high { background: #f39c12; color: white; }
+        .status-medium { background: #f1c40f; color: #2c3e50; }
+        .status-low { background: #2ecc71; color: white; }
+        .status-contaminated { background: #8e44ad; color: white; }
+        .status-safe { background: #3498db; color: white; }
+        
+        .info-panel {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(0,0,0,0.8);
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            z-index: 1000;
+            max-width: 300px;
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.2); opacity: 0.7; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        
+        .pulse-animation {
+            animation: pulse 2s infinite;
+        }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+    
+    <div class="info-panel">
+        <h3 style="margin: 0 0 10px 0;">🗺️ Live Health Surveillance</h3>
+        <div style="font-size: 12px; opacity: 0.9;">
+            Real-time monitoring of water contamination and health reports across Northeast India
+        </div>
+    </div>
+    
+    <div class="legend">
+        <h4>🎯 Map Legend</h4>
+        
+        <div style="margin-bottom: 15px;">
+            <strong style="font-size: 13px; color: #7f8c8d;">Disease Risk Levels:</strong>
+        </div>
+        <div class="legend-item">
+            <div class="legend-color" style="background: #c0392b;"></div>
+            <span>Critical Risk (>10 cases)</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-color" style="background: #e74c3c;"></div>
+            <span>High Risk (5-10 cases)</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-color" style="background: #f39c12;"></div>
+            <span>Medium Risk (2-5 cases)</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-color" style="background: #27ae60;"></div>
+            <span>Low Risk (<2 cases)</span>
+        </div>
+        
+        <div style="margin: 15px 0 10px 0;">
+            <strong style="font-size: 13px; color: #7f8c8d;">Water Quality:</strong>
+        </div>
+        <div class="legend-item">
+            <div class="contamination-zone"></div>
+            <span>Contaminated Water Zone</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-color" style="background: #3498db;"></div>
+            <span>Safe Water Source</span>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        // Initialize map centered on Northeast India
+        const map = L.map('map').setView([25.5788, 92.9376], 7);
+
+        // Add OpenStreetMap tiles with better styling
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors',
+            maxZoom: 18
+        }).addTo(map);
+
+        // Enhanced sample data with more realistic locations
+        const healthReports = [
+            {
+                lat: 26.1445, lng: 91.7362, 
+                location: "Guwahati Central", 
+                cases: 15, 
+                diseases: ["Diarrhea", "Cholera"],
+                risk: "critical",
+                lastUpdated: "2 hours ago"
+            },
+            {
+                lat: 27.4728, lng: 94.9120, 
+                location: "Dibrugarh", 
+                cases: 8, 
+                diseases: ["Cholera", "Typhoid"],
+                risk: "high",
+                lastUpdated: "4 hours ago"
+            },
+            {
+                lat: 24.8333, lng: 92.7789, 
+                location: "Silchar", 
+                cases: 3, 
+                diseases: ["Typhoid"],
+                risk: "medium",
+                lastUpdated: "1 day ago"
+            },
+            {
+                lat: 25.5788, lng: 91.8933, 
+                location: "Shillong", 
+                cases: 6, 
+                diseases: ["Hepatitis A", "Diarrhea"],
+                risk: "high",
+                lastUpdated: "6 hours ago"
+            },
+            {
+                lat: 24.8170, lng: 93.9368, 
+                location: "Imphal", 
+                cases: 2, 
+                diseases: ["Diarrhea"],
+                risk: "low",
+                lastUpdated: "12 hours ago"
+            }
+        ];
+
+        // Enhanced water contamination data
+        const contaminatedWaterSources = [
+            {
+                lat: 26.1500, lng: 91.7400, 
+                location: "Brahmaputra River - Guwahati Sector", 
+                contaminationType: "Bacterial",
+                severity: "High",
+                ph: 8.5, 
+                turbidity: 12.3,
+                bacterialCount: 850,
+                affectedPopulation: 15000
+            },
+            {
+                lat: 27.4800, lng: 94.9200, 
+                location: "Dibrugarh Industrial Area", 
+                contaminationType: "Chemical + Bacterial",
+                severity: "Critical",
+                ph: 9.2, 
+                turbidity: 18.7,
+                bacterialCount: 1200,
+                affectedPopulation: 8500
+            },
+            {
+                lat: 25.6000, lng: 91.9000, 
+                location: "Shillong Ward 3 Borewell", 
+                contaminationType: "Bacterial",
+                severity: "Medium",
+                ph: 8.8, 
+                turbidity: 8.2,
+                bacterialCount: 450,
+                affectedPopulation: 3200
+            }
+        ];
+
+        // Safe water sources
+        const safeWaterSources = [
+            {
+                lat: 24.8400, lng: 92.7800, 
+                location: "Silchar Municipal Treatment Plant", 
+                ph: 7.2, 
+                turbidity: 2.1,
+                bacterialCount: 45,
+                status: "Excellent"
+            },
+            {
+                lat: 24.8200, lng: 93.9400, 
+                location: "Imphal Water Supply", 
+                ph: 7.0, 
+                turbidity: 1.8,
+                bacterialCount: 32,
+                status: "Good"
+            }
+        ];
+
+        // Add contaminated water zones with enhanced visualization
+        contaminatedWaterSources.forEach((source, index) => {
+            // Create contamination zone circle
+            const contaminationRadius = source.severity === 'Critical' ? 2000 : 
+                                      source.severity === 'High' ? 1500 : 1000;
+            
+            const contaminationZone = L.circle([source.lat, source.lng], {
+                radius: contaminationRadius,
+                fillColor: source.severity === 'Critical' ? '#c0392b' : 
+                          source.severity === 'High' ? '#e74c3c' : '#f39c12',
+                fillOpacity: 0.3,
+                color: source.severity === 'Critical' ? '#c0392b' : 
+                       source.severity === 'High' ? '#e74c3c' : '#f39c12',
+                weight: 3,
+                dashArray: '10, 10',
+                className: 'pulse-animation'
+            }).addTo(map);
+
+            // Add center marker
+            const contaminationMarker = L.marker([source.lat, source.lng], {
+                icon: L.divIcon({
+                    html: `<div style="
+                        background: ${source.severity === 'Critical' ? '#c0392b' : 
+                                    source.severity === 'High' ? '#e74c3c' : '#f39c12'}; 
+                        color: white; 
+                        border-radius: 50%; 
+                        width: 40px; 
+                        height: 40px; 
+                        display: flex; 
+                        align-items: center; 
+                        justify-content: center; 
+                        font-size: 20px; 
+                        border: 3px solid white;
+                        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+                        animation: pulse 2s infinite;
+                    ">⚠️</div>`,
+                    iconSize: [40, 40],
+                    className: 'contamination-marker'
+                })
+            }).addTo(map);
+
+            contaminationMarker.bindPopup(`
+                <div class="popup-content">
+                    <div class="popup-header">🚨 CONTAMINATED WATER SOURCE</div>
+                    <div><strong>📍 Location:</strong> ${source.location}</div>
+                    <div><strong>☢️ Contamination:</strong> 
+                        <span class="status-badge status-contaminated">${source.contaminationType}</span>
+                    </div>
+                    <div><strong>⚠️ Severity:</strong> 
+                        <span class="status-badge ${source.severity === 'Critical' ? 'status-critical' : 
+                                                   source.severity === 'High' ? 'status-high' : 'status-medium'}">${source.severity}</span>
+                    </div>
+                    <div><strong>🧪 pH Level:</strong> ${source.ph}</div>
+                    <div><strong>🌊 Turbidity:</strong> ${source.turbidity} NTU</div>
+                    <div><strong>🦠 Bacterial Count:</strong> ${source.bacterialCount}/100ml</div>
+                    <div><strong>👥 Affected Population:</strong> ~${source.affectedPopulation.toLocaleString()}</div>
+                    <div style="margin-top: 10px; padding: 8px; background: #e74c3c; color: white; border-radius: 6px; font-weight: bold; text-align: center;">
+                        🚫 DO NOT CONSUME - IMMEDIATE HEALTH RISK
+                    </div>
+                </div>
+            `);
+        });
+
+        // Add health report markers
+        healthReports.forEach(report => {
+            const markerColor = report.risk === 'critical' ? '#c0392b' : 
+                               report.risk === 'high' ? '#e74c3c' : 
+                               report.risk === 'medium' ? '#f39c12' : '#27ae60';
+            
+            const markerSize = Math.max(20, Math.min(50, report.cases * 2));
+            
+            const healthMarker = L.marker([report.lat, report.lng], {
+                icon: L.divIcon({
+                    html: `<div style="
+                        background: ${markerColor}; 
+                        color: white; 
+                        border-radius: 50%; 
+                        width: ${markerSize}px; 
+                        height: ${markerSize}px; 
+                        display: flex; 
+                        align-items: center; 
+                        justify-content: center; 
+                        font-size: 16px; 
+                        font-weight: bold;
+                        border: 3px solid white;
+                        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+                        ${report.risk === 'critical' ? 'animation: pulse 1s infinite;' : ''}
+                    ">🏥</div>`,
+                    iconSize: [markerSize, markerSize],
+                    className: 'health-marker'
+                })
+            }).addTo(map);
+
+            healthMarker.bindPopup(`
+                <div class="popup-content">
+                    <div class="popup-header">🏥 Health Report Center</div>
+                    <div><strong>📍 Location:</strong> ${report.location}</div>
+                    <div><strong>📊 Total Cases:</strong> ${report.cases}</div>
+                    <div><strong>🦠 Diseases:</strong> ${report.diseases.join(', ')}</div>
+                    <div><strong>⚠️ Risk Level:</strong> 
+                        <span class="status-badge ${report.risk === 'critical' ? 'status-critical' : 
+                                                   report.risk === 'high' ? 'status-high' : 
+                                                   report.risk === 'medium' ? 'status-medium' : 'status-low'}">${report.risk.toUpperCase()}</span>
+                    </div>
+                    <div><strong>🕒 Last Updated:</strong> ${report.lastUpdated}</div>
+                    <div style="margin-top: 10px; padding: 8px; background: #3498db; color: white; border-radius: 6px; text-align: center;">
+                        📞 Emergency Contact: 108 | 🚑 Medical Teams Deployed
+                    </div>
+                </div>
+            `);
+        });
+
+        // Add safe water source markers
+        safeWaterSources.forEach(source => {
+            const safeMarker = L.marker([source.lat, source.lng], {
+                icon: L.divIcon({
+                    html: `<div style="
+                        background: #3498db; 
+                        color: white; 
+                        border-radius: 50%; 
+                        width: 30px; 
+                        height: 30px; 
+                        display: flex; 
+                        align-items: center; 
+                        justify-content: center; 
+                        font-size: 16px; 
+                        border: 3px solid white;
+                        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+                    ">💧</div>`,
+                    iconSize: [30, 30],
+                    className: 'safe-water-marker'
+                })
+            }).addTo(map);
+
+            safeMarker.bindPopup(`
+                <div class="popup-content">
+                    <div class="popup-header">💧 Safe Water Source</div>
+                    <div><strong>📍 Location:</strong> ${source.location}</div>
+                    <div><strong>🧪 pH Level:</strong> ${source.ph}</div>
+                    <div><strong>🌊 Turbidity:</strong> ${source.turbidity} NTU</div>
+                    <div><strong>🦠 Bacterial Count:</strong> ${source.bacterialCount}/100ml</div>
+                    <div><strong>✅ Status:</strong> 
+                        <span class="status-badge status-safe">${source.status}</span>
+                    </div>
+                    <div style="margin-top: 10px; padding: 8px; background: #27ae60; color: white; border-radius: 6px; font-weight: bold; text-align: center;">
+                        ✅ SAFE FOR CONSUMPTION
+                    </div>
+                </div>
+            `);
+        });
+
+        // Add prediction overlay for high-risk areas
+        const predictionArea = L.polygon([
+            [26.0, 91.5],
+            [26.4, 91.5],
+            [26.4, 92.2],
+            [26.0, 92.2]
+        ], {
+            color: '#9b59b6',
+            fillColor: '#9b59b6',
+            fillOpacity: 0.2,
+            weight: 3,
+            dashArray: '15, 10'
+        }).addTo(map);
+
+        predictionArea.bindPopup(`
+            <div class="popup-content">
+                <div class="popup-header">🤖 AI Prediction Zone</div>
+                <div><strong>🔮 Predicted Outbreak:</strong> Cholera & Diarrhea</div>
+                <div><strong>⚠️ Risk Level:</strong> 
+                    <span class="status-badge status-high">HIGH</span>
+                </div>
+                <div><strong>📅 Timeline:</strong> Next 7-14 days</div>
+                <div><strong>🎯 Confidence:</strong> 78%</div>
+                <div><strong>📊 Predicted Cases:</strong> 12-18</div>
+                <div style="margin-top: 10px; padding: 8px; background: #e67e22; color: white; border-radius: 6px; font-weight: bold; text-align: center;">
+                    🚨 IMMEDIATE INTERVENTION REQUIRED
+                </div>
+            </div>
+        `);
+
+        // Auto-refresh simulation
+        let refreshCount = 0;
+        setInterval(() => {
+            refreshCount++;
+            console.log(`Map data refreshed ${refreshCount} times - Real-time monitoring active`);
+            
+            // Simulate new data updates (in real app, fetch from API)
+            if (refreshCount % 10 === 0) {
+                // Add notification for new data
+                const notification = L.popup()
+                    .setLatLng([26.5, 92.5])
+                    .setContent('<div style="text-align: center; font-weight: bold; color: #27ae60;">📡 Data Updated - New reports received</div>')
+                    .openOn(map);
+                
+                setTimeout(() => {
+                    map.closePopup(notification);
+                }, 3000);
+            }
+        }, 5000);
+
+        // Add map controls
+        map.on('click', function(e) {
+            console.log('Clicked at: ' + e.latlng.lat + ', ' + e.latlng.lng);
+        });
+
+        // Fit map to show all markers
+        const allMarkers = [
+            ...healthReports.map(r => [r.lat, r.lng]),
+            ...contaminatedWaterSources.map(s => [s.lat, s.lng]),
+            ...safeWaterSources.map(s => [s.lat, s.lng])
+        ];
+        
+        if (allMarkers.length > 0) {
+            const group = new L.featureGroup(allMarkers.map(coords => L.marker(coords)));
+            map.fitBounds(group.getBounds().pad(0.1));
+        }
+    </script>
+</body>
+</html>

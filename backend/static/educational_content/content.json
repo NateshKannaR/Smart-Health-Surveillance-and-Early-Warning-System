@@ -1,0 +1,44 @@
+{
+  "water_safety": {
+    "en": {
+      "title": "Water Safety Guidelines",
+      "content": [
+        "Boil water for at least 1 minute before drinking",
+        "Use water purification tablets if boiling is not possible",
+        "Store treated water in clean, covered containers",
+        "Avoid ice unless made from safe water",
+        "Use bottled water from reliable sources"
+      ],
+      "audio_available": true
+    },
+    "hi": {
+      "title": "पानी की सुरक्षा दिशानिर्देश",
+      "content": [
+        "पीने से पहले पानी को कम से कम 1 मिनट तक उबालें",
+        "यदि उबालना संभव नहीं है तो पानी शुद्धीकरण गोलियों का उपयोग करें",
+        "उपचारित पानी को साफ, ढके हुए कंटेनरों में स्टोर करें"
+      ],
+      "audio_available": true
+    },
+    "as": {
+      "title": "পানীৰ সুৰক্ষা নিৰ্দেশনা",
+      "content": [
+        "খোৱাৰ আগতে পানী কমেও ১ মিনিট উতলাওক",
+        "উতলোৱা সম্ভৱ নহ'লে পানী বিশুদ্ধকৰণ টেবলেট ব্যৱহাৰ কৰক"
+      ],
+      "audio_available": false
+    }
+  },
+  "hygiene_practices": {
+    "en": {
+      "title": "Personal Hygiene Practices",
+      "content": [
+        "Wash hands frequently with soap and clean water",
+        "Use alcohol-based hand sanitizer when soap is unavailable",
+        "Avoid touching face with unwashed hands",
+        "Cover mouth and nose when coughing or sneezing"
+      ],
+      "audio_available": true
+    }
+  }
+}
