@@ -433,6 +433,8 @@ async def delete_health_report(report_id: int):
         conn = sqlite3.connect("health_surveillance.db")
         cursor = conn.cursor()
         cursor.execute("DELETE FROM health_reports WHERE id = ?", (report_id,))
+        # Clear old predictions when data changes
+        cursor.execute("DELETE FROM predictions WHERE prediction_date < datetime('now', '-1 hour')")
         conn.commit()
         conn.close()
         return {"status": "success", "message": "Health report deleted successfully"}
@@ -445,6 +447,8 @@ async def delete_water_source(source_id: int):
         conn = sqlite3.connect("health_surveillance.db")
         cursor = conn.cursor()
         cursor.execute("DELETE FROM water_quality_reports WHERE id = ?", (source_id,))
+        # Clear old predictions when data changes
+        cursor.execute("DELETE FROM predictions WHERE prediction_date < datetime('now', '-1 hour')")
         conn.commit()
         conn.close()
         return {"status": "success", "message": "Water source deleted successfully"}
@@ -457,6 +461,8 @@ async def mark_patient_cured(report_id: int):
         conn = sqlite3.connect("health_surveillance.db")
         cursor = conn.cursor()
         cursor.execute("DELETE FROM health_reports WHERE id = ?", (report_id,))
+        # Clear old predictions when data changes
+        cursor.execute("DELETE FROM predictions WHERE prediction_date < datetime('now', '-1 hour')")
         conn.commit()
         conn.close()
         return {"status": "success", "message": "Patient marked as cured"}
@@ -474,15 +480,20 @@ async def get_ai_predictions():
         conn = sqlite3.connect("health_surveillance.db")
         cursor = conn.cursor()
         
-        # Get actual predictions from database
+        # Auto-cleanup old predictions (older than 2 hours)
+        cursor.execute("DELETE FROM predictions WHERE prediction_date < datetime('now', '-2 hours')")
+        
+        # Get recent predictions from database
         cursor.execute("""
             SELECT location, disease, risk_score, predicted_cases, confidence, factors, prediction_date
             FROM predictions 
+            WHERE prediction_date > datetime('now', '-1 hour')
             ORDER BY id DESC 
             LIMIT 10
         """)
         prediction_rows = cursor.fetchall()
         
+        conn.commit()
         conn.close()
         
         if len(prediction_rows) == 0:
@@ -723,29 +734,30 @@ async def trigger_outbreak_prediction(location: str):
         conn = sqlite3.connect("health_surveillance.db")
         cursor = conn.cursor()
         
-        # Get recent health reports for this location
+        # Get recent health reports for this EXACT location only
         cursor.execute("""
             SELECT disease, severity, reported_at, location
             FROM health_reports 
-            WHERE location LIKE ? AND reported_at > datetime('now', '-7 days')
-        """, (f"%{location}%",))
+            WHERE LOWER(TRIM(location)) = LOWER(TRIM(?)) AND reported_at > datetime('now', '-7 days')
+        """, (location,))
         health_reports = [{'disease': r[0], 'severity': r[1], 'reported_at': r[2], 'location': r[3]} 
                          for r in cursor.fetchall()]
         
-        # Get recent water quality reports for this location
+        # Get recent water quality reports for this EXACT location only
         cursor.execute("""
             SELECT location, ph_level, turbidity, bacterial_count, is_contaminated, tested_at
             FROM water_quality_reports 
-            WHERE location LIKE ? AND tested_at > datetime('now', '-7 days')
-        """, (f"%{location}%",))
+            WHERE LOWER(TRIM(location)) = LOWER(TRIM(?)) AND tested_at > datetime('now', '-7 days')
+        """, (location,))
         water_reports = [{'location': r[0], 'ph_level': r[1], 'turbidity': r[2],
                          'bacterial_count': r[3], 'is_contaminated': r[4], 'tested_at': r[5]} 
                         for r in cursor.fetchall()]
         
         conn.close()
         
-        # Only run prediction if we have sufficient data
-        if len(health_reports) >= 2 or len(water_reports) >= 1:
+        # Only run prediction if we have data for this specific location
+        if len(health_reports) >= 1 or len(water_reports) >= 1:
+            print(f"Running prediction for {location}: {len(health_reports)} health reports, {len(water_reports)} water reports")
             from ml_models.outbreak_prediction import predict_outbreak
             prediction = predict_outbreak(health_reports, water_reports, location)
             
@@ -762,8 +774,32 @@ async def trigger_outbreak_prediction(location: str):
             conn.commit()
             conn.close()
             
+            # Create alert if high risk
+            if prediction['risk_score'] > 0.5:  # Alert threshold
+                risk_pct = int(prediction['risk_score'] * 100)
+                if risk_pct >= 80:
+                    severity = "critical"
+                    alert_msg = f"CRITICAL: {prediction['disease']} outbreak {risk_pct}% risk in {location}"
+                elif risk_pct >= 70:
+                    severity = "high"
+                    alert_msg = f"HIGH: {prediction['disease']} outbreak {risk_pct}% risk in {location}"
+                else:
+                    severity = "medium"
+                    alert_msg = f"MEDIUM: {prediction['disease']} risk {risk_pct}% in {location}"
+                
+                # Store alert in database
+                conn = sqlite3.connect("health_surveillance.db")
+                cursor = conn.cursor()
+                cursor.execute("""
+                    INSERT INTO alerts (severity, is_active, created_at, location, message)
+                    VALUES (?, 1, datetime('now'), ?, ?)
+                """, (severity, location, alert_msg))
+                conn.commit()
+                conn.close()
+                print(f"Alert created: {severity} for {location}")
+            
             # Send email alert if high risk
-            if prediction['risk_score'] > 0.6:  # High risk threshold
+            if prediction['risk_score'] > 0.6:  # Email threshold
                 try:
                     from services.email_service import EmailService
                     email_service = EmailService()
@@ -793,7 +829,7 @@ async def trigger_outbreak_prediction(location: str):
             prediction['alert_generated'] = True
             return prediction
         
-        return {'alert_generated': False, 'message': 'Insufficient data for prediction'}
+        return {'alert_generated': False, 'message': f'No data found for location: {location}'}
         
     except Exception as e:
         print(f"Prediction error: {e}")
@@ -1061,6 +1097,34 @@ async def test_simple_email(email: str = "niswan0077@gmail.com"):
         email_service = EmailService()
         result = email_service.send_test_email(email)
         return result
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+# Clear predictions endpoint
+@app.delete("/api/predictions/clear")
+async def clear_predictions(all: bool = False):
+    """Clear old or all predictions"""
+    try:
+        conn = sqlite3.connect("health_surveillance.db")
+        cursor = conn.cursor()
+        
+        if all:
+            cursor.execute("DELETE FROM predictions")
+            message = "All predictions cleared"
+        else:
+            # Clear predictions older than 1 hour
+            cursor.execute("DELETE FROM predictions WHERE prediction_date < datetime('now', '-1 hour')")
+            message = "Old predictions cleared"
+        
+        deleted_count = cursor.rowcount
+        conn.commit()
+        conn.close()
+        
+        return {
+            "status": "success", 
+            "message": message,
+            "deleted_count": deleted_count
+        }
     except Exception as e:
         return {"status": "error", "message": str(e)}
 

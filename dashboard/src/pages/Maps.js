@@ -37,26 +37,38 @@ const Maps = () => {
 
   useEffect(() => {
     fetchData();
-    const interval = setInterval(fetchData, 30000);
+    const interval = setInterval(fetchData, 5000); // Update every 5 seconds
     return () => clearInterval(interval);
   }, []);
 
   const fetchData = async () => {
     try {
       setError(null);
+      console.log('Fetching map data...');
+      
       const [healthRes, waterRes, alertsRes] = await Promise.all([
-        fetch('http://localhost:8000/api/health/reports'),
-        fetch('http://localhost:8000/api/water/sources'),
-        fetch('http://localhost:8000/api/alerts')
+        fetch('http://localhost:8000/api/health/reports', { cache: 'no-cache' }),
+        fetch('http://localhost:8000/api/water/sources', { cache: 'no-cache' }), 
+        fetch('http://localhost:8000/api/alerts', { cache: 'no-cache' })
       ]);
 
+      const healthData = healthRes.ok ? await healthRes.json() : [];
+      const waterData = waterRes.ok ? await waterRes.json() : [];
+      const alertsData = alertsRes.ok ? await alertsRes.json() : [];
+      
+      console.log('Map data fetched:', {
+        health: healthData.length,
+        water: waterData.length, 
+        alerts: alertsData.length
+      });
+
       setData({
-        health: healthRes.ok ? await healthRes.json() : [],
-        water: waterRes.ok ? await waterRes.json() : [],
-        alerts: alertsRes.ok ? await alertsRes.json() : []
+        health: Array.isArray(healthData) ? healthData : [],
+        water: Array.isArray(waterData) ? waterData : [],
+        alerts: Array.isArray(alertsData) ? alertsData : []
       });
     } catch (error) {
-      console.error('Error:', error);
+      console.error('Map fetch error:', error);
       setError('Failed to fetch map data. Please check if the backend server is running.');
     } finally {
       setLoading(false);
@@ -96,7 +108,10 @@ const Maps = () => {
       
       // Test locations
       'test location': { lat: 26.9124, lng: 75.7873 },
-      'testcity': { lat: 26.9124, lng: 75.7873 }
+      'testcity': { lat: 26.9124, lng: 75.7873 },
+      'salem': { lat: 11.6643, lng: 78.1460 },
+      'coimbatore': { lat: 11.0168, lng: 76.9558 },
+      'karur': { lat: 10.9601, lng: 78.0766 }
     };
     
     if (!location) return null;
@@ -108,12 +123,15 @@ const Maps = () => {
       return coords[locationKey];
     }
     
-    // Partial match
+    // Partial match - check if location contains city name
     for (let place in coords) {
       if (locationKey.includes(place) || place.includes(locationKey)) {
         return coords[place];
       }
     }
+    
+    // Default fallback for unknown locations
+    console.log(`Unknown location: ${location}`);
     
     return null;
   };
@@ -176,9 +194,21 @@ const Maps = () => {
   const getLocationData = () => {
     const locationMap = new Map();
     
+    console.log('Processing location data:', {
+      health: data.health?.length || 0,
+      water: data.water?.length || 0, 
+      alerts: data.alerts?.length || 0
+    });
+    
     // Process all data sources
-    [...data.health, ...data.water, ...data.alerts].forEach(item => {
-      if (item.location) {
+    const allItems = [
+      ...(data.health || []),
+      ...(data.water || []),
+      ...(data.alerts || [])
+    ];
+    
+    allItems.forEach(item => {
+      if (item && item.location) {
         const coords = getLocationCoords(item.location);
         if (coords) {
           const key = item.location.toLowerCase().trim();
@@ -190,25 +220,30 @@ const Maps = () => {
               water: [],
               alerts: []
             });
+            console.log(`Added location: ${item.location} at ${coords.lat}, ${coords.lng}`);
           }
+        } else {
+          console.log(`No coordinates found for: ${item.location}`);
         }
       }
     });
     
     // Populate data for each location
     locationMap.forEach((locationData, key) => {
-      locationData.health = data.health.filter(h => 
-        h.location && h.location.toLowerCase().includes(key)
+      locationData.health = (data.health || []).filter(h => 
+        h && h.location && h.location.toLowerCase().trim() === key
       );
-      locationData.water = data.water.filter(w => 
-        w.location && w.location.toLowerCase().includes(key)
+      locationData.water = (data.water || []).filter(w => 
+        w && w.location && w.location.toLowerCase().trim() === key
       );
-      locationData.alerts = data.alerts.filter(a => 
-        a.location && a.location.toLowerCase().includes(key)
+      locationData.alerts = (data.alerts || []).filter(a => 
+        a && a.location && a.location.toLowerCase().trim() === key
       );
     });
     
-    return Array.from(locationMap.values());
+    const locations = Array.from(locationMap.values());
+    console.log('Processed locations:', locations.length);
+    return locations;
   };
 
   if (loading) {
@@ -366,29 +401,35 @@ const Maps = () => {
             <CardContent>
               <Typography variant="h6" sx={{ fontWeight: 600, mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
                 <HealthAndSafety color="error" />
-                Health Reports ({data.health.length})
+                Health Reports ({(data.health || []).length})
               </Typography>
-              {locationData.filter(l => l.health.length > 0).map(location => {
-                const severity = getLocationSeverity(location.name);
-                const severeCount = location.health.filter(h => h.severity === 'severe').length;
-                return (
-                  <Box key={location.name} sx={{
-                    p: 1.5, 
-                    mb: 1, 
-                    borderRadius: 1,
-                    borderLeft: 4,
-                    borderColor: getSeverityColor(severity),
-                    backgroundColor: 'grey.50'
-                  }}>
-                    <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                      {location.name} - {location.health.length} cases
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      {severeCount > 0 ? `⚠️ ${severeCount} severe` : '✅ No severe cases'}
-                    </Typography>
-                  </Box>
-                );
-              })}
+              {(data.health || []).length === 0 ? (
+                <Typography variant="body2" color="text.secondary">
+                  No health reports available
+                </Typography>
+              ) : (
+                locationData.filter(l => l.health.length > 0).map(location => {
+                  const severity = getLocationSeverity(location.name);
+                  const severeCount = location.health.filter(h => h.severity === 'severe').length;
+                  return (
+                    <Box key={location.name} sx={{
+                      p: 1.5, 
+                      mb: 1, 
+                      borderRadius: 1,
+                      borderLeft: 4,
+                      borderColor: getSeverityColor(severity),
+                      backgroundColor: 'grey.50'
+                    }}>
+                      <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                        {location.name} - {location.health.length} cases
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        {severeCount > 0 ? `⚠️ ${severeCount} severe` : '✅ No severe cases'}
+                      </Typography>
+                    </Box>
+                  );
+                })
+              )}
             </CardContent>
           </Card>
         </Grid>
@@ -398,26 +439,32 @@ const Maps = () => {
             <CardContent>
               <Typography variant="h6" sx={{ fontWeight: 600, mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
                 <WaterDrop color="info" />
-                Water Quality ({data.water.length})
+                Water Quality ({(data.water || []).length})
               </Typography>
-              {locationData.filter(l => l.water.length > 0).map(location => {
-                const contaminated = location.water.filter(w => !w.is_safe).length;
-                return (
-                  <Box key={location.name} sx={{
-                    p: 1.5, 
-                    mb: 1, 
-                    borderRadius: 1,
-                    backgroundColor: 'grey.50'
-                  }}>
-                    <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                      {location.name} - {location.water.length} sources
-                    </Typography>
-                    <Typography variant="caption" color={contaminated > 0 ? 'error.main' : 'success.main'}>
-                      {contaminated > 0 ? `❌ ${contaminated} contaminated` : '✅ All sources safe'}
-                    </Typography>
-                  </Box>
-                );
-              })}
+              {(data.water || []).length === 0 ? (
+                <Typography variant="body2" color="text.secondary">
+                  No water quality data available
+                </Typography>
+              ) : (
+                locationData.filter(l => l.water.length > 0).map(location => {
+                  const contaminated = location.water.filter(w => !w.is_safe).length;
+                  return (
+                    <Box key={location.name} sx={{
+                      p: 1.5, 
+                      mb: 1, 
+                      borderRadius: 1,
+                      backgroundColor: 'grey.50'
+                    }}>
+                      <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                        {location.name} - {location.water.length} sources
+                      </Typography>
+                      <Typography variant="caption" color={contaminated > 0 ? 'error.main' : 'success.main'}>
+                        {contaminated > 0 ? `❌ ${contaminated} contaminated` : '✅ All sources safe'}
+                      </Typography>
+                    </Box>
+                  );
+                })
+              )}
             </CardContent>
           </Card>
         </Grid>
@@ -427,23 +474,29 @@ const Maps = () => {
             <CardContent>
               <Typography variant="h6" sx={{ fontWeight: 600, mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
                 <Warning color="warning" />
-                Active Alerts ({data.alerts.length})
+                Active Alerts ({(data.alerts || []).length})
               </Typography>
-              {locationData.filter(l => l.alerts.length > 0).map(location => (
-                <Box key={location.name} sx={{
-                  p: 1.5, 
-                  mb: 1, 
-                  borderRadius: 1,
-                  backgroundColor: 'grey.50'
-                }}>
-                  <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                    {location.name} - {location.alerts.length} alerts
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    Latest: {location.alerts[0]?.severity}
-                  </Typography>
-                </Box>
-              ))}
+              {(data.alerts || []).length === 0 ? (
+                <Typography variant="body2" color="text.secondary">
+                  No active alerts
+                </Typography>
+              ) : (
+                locationData.filter(l => l.alerts.length > 0).map(location => (
+                  <Box key={location.name} sx={{
+                    p: 1.5, 
+                    mb: 1, 
+                    borderRadius: 1,
+                    backgroundColor: 'grey.50'
+                  }}>
+                    <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                      {location.name} - {location.alerts.length} alerts
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      Latest: {location.alerts[0]?.severity}
+                    </Typography>
+                  </Box>
+                ))
+              )}
             </CardContent>
           </Card>
         </Grid>

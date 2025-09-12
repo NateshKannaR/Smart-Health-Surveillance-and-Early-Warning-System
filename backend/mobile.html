@@ -607,8 +607,13 @@
 
         function showMessage(text, type) {
             const msg = document.getElementById('message');
-            msg.innerHTML = `<div class="${type}">${text}</div>`;
-            setTimeout(() => msg.innerHTML = '', 3000);
+            // Handle multi-line messages
+            const formattedText = text.replace(/\n/g, '<br>');
+            msg.innerHTML = `<div class="${type}">${formattedText}</div>`;
+            
+            // Show longer for important alerts
+            const timeout = text.includes('ALERT') || text.includes('PREDICTION') ? 8000 : 3000;
+            setTimeout(() => msg.innerHTML = '', timeout);
         }
 
         document.getElementById('healthForm').addEventListener('submit', async (e) => {
@@ -624,9 +629,22 @@
                     body: JSON.stringify(data)
                 });
                 
-                if (response.ok) {
-                    showMessage('Health report submitted successfully!', 'success');
+                const result = await response.json();
+                
+                if (result.status === 'success') {
+                    let message = '✅ Health report submitted successfully!';
+                    
+                    // Check if alert was generated
+                    if (result.alert) {
+                        message += `\n🚨 ${result.alert.severity} RISK ALERT: ${result.alert.message}`;
+                        message += '\n📧 Email notification sent to health authorities!';
+                    }
+                    
+                    showMessage(message, 'success');
                     e.target.reset();
+                    
+                    // Trigger prediction check
+                    setTimeout(() => checkPredictionStatus(data.location), 2000);
                 } else {
                     showMessage('Failed to submit health report', 'error');
                 }
@@ -644,7 +662,6 @@
             data.turbidity = parseFloat(data.turbidity);
             data.bacterial_count = parseInt(data.bacterial_count);
             data.temperature = parseFloat(data.temperature);
-            // source_type comes from form now
             
             try {
                 const response = await fetch(`${API_URL}/water/sources`, {
@@ -653,9 +670,22 @@
                     body: JSON.stringify(data)
                 });
                 
-                if (response.ok) {
-                    showMessage('Water quality report submitted successfully!', 'success');
+                const result = await response.json();
+                
+                if (result.status === 'success') {
+                    let message = '✅ Water quality report submitted successfully!';
+                    
+                    // Check if alert was generated
+                    if (result.alert) {
+                        message += `\n🚨 ${result.alert.severity} CONTAMINATION ALERT: ${result.alert.message}`;
+                        message += '\n📧 Email notification sent to health authorities!';
+                    }
+                    
+                    showMessage(message, 'success');
                     e.target.reset();
+                    
+                    // Trigger prediction check
+                    setTimeout(() => checkPredictionStatus(data.location), 2000);
                 } else {
                     showMessage('Failed to submit water report', 'error');
                 }
@@ -824,7 +854,7 @@
         async function quickReport(symptom) {
             const reportData = {
                 disease: symptom,
-                severity: 'mild',
+                severity: 'moderate', // Changed to moderate for higher risk
                 location: localStorage.getItem('userLocation') || 'Community Report',
                 patient_age: 25,
                 patient_gender: 'unknown',
@@ -840,12 +870,26 @@
                         body: JSON.stringify(reportData)
                     });
                     
-                    if (response.ok) {
-                        showMessage(`${symptom} report submitted successfully!`, 'success');
+                    const result = await response.json();
+                    
+                    if (result.status === 'success') {
+                        let message = `✅ ${symptom} report submitted successfully!`;
+                        
+                        // Check if alert was generated
+                        if (result.alert) {
+                            message += `\n🚨 ${result.alert.severity} RISK DETECTED!`;
+                            message += '\n📧 Authorities notified automatically!';
+                        }
+                        
+                        showMessage(message, 'success');
+                        
                         // Update dashboard data immediately
                         syncWithDashboard();
                         // Trigger AI prediction update
                         triggerPredictionUpdate(reportData);
+                        
+                        // Check prediction after submission
+                        setTimeout(() => checkPredictionStatus(reportData.location), 2000);
                     } else {
                         throw new Error('Server error');
                     }
@@ -1056,6 +1100,41 @@
             }
         }
 
+        // Check prediction status after submission
+        async function checkPredictionStatus(location) {
+            try {
+                const response = await fetch(`${API_URL}/ai/predictions`);
+                const predictions = await response.json();
+                
+                const locationPredictions = predictions.filter(p => 
+                    p.location.toLowerCase().includes(location.toLowerCase())
+                );
+                
+                if (locationPredictions.length > 0) {
+                    const highestRisk = locationPredictions.reduce((max, p) => 
+                        p.riskScore > max.riskScore ? p : max
+                    );
+                    
+                    if (highestRisk.riskScore >= 60) {
+                        showMessage(
+                            `🤖 AI PREDICTION: ${highestRisk.riskScore}% outbreak risk detected in ${location}!\n` +
+                            `📊 Predicted cases: ${highestRisk.predictedCases}\n` +
+                            `📧 Email alerts sent automatically!`,
+                            'error'
+                        );
+                    } else if (highestRisk.riskScore >= 40) {
+                        showMessage(
+                            `⚠️ AI PREDICTION: ${highestRisk.riskScore}% moderate risk in ${location}\n` +
+                            `📊 Predicted cases: ${highestRisk.predictedCases}`,
+                            'success'
+                        );
+                    }
+                }
+            } catch (error) {
+                console.log('Prediction check failed:', error);
+            }
+        }
+        
         // Initialize app
         window.onload = function() {
             loadDashboard();

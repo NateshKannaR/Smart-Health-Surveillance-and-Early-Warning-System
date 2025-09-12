@@ -37,25 +37,37 @@ const Alerts = () => {
 
   useEffect(() => {
     fetchAlerts();
-    const interval = setInterval(fetchAlerts, 5000);
+    const interval = setInterval(fetchAlerts, 3000); // Update every 3 seconds
     return () => clearInterval(interval);
   }, []);
 
   const fetchAlerts = async () => {
     try {
       setError(null);
-      const response = await fetch('http://localhost:8000/api/alerts');
+      console.log('Fetching alerts from API...');
+      
+      const response = await fetch('http://localhost:8000/api/alerts', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        cache: 'no-cache'
+      });
       
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
       
       const data = await response.json();
-      console.log('Fetched alerts:', data);
-      setAlerts(Array.isArray(data) ? data : []);
+      console.log('Alerts API response:', data);
+      
+      const alertsArray = Array.isArray(data) ? data : [];
+      console.log(`Setting ${alertsArray.length} alerts`);
+      
+      setAlerts(alertsArray);
     } catch (error) {
       console.error('Error fetching alerts:', error);
-      setError(error.message);
+      setError(`Connection failed: ${error.message}`);
       setAlerts([]);
     } finally {
       setLoading(false);
@@ -258,9 +270,9 @@ const Alerts = () => {
         </Typography>
         
         {alerts.length === 0 ? (
-          <Alert severity="success" sx={{ textAlign: 'center' }}>
-            <AlertTitle>All Clear</AlertTitle>
-            No active alerts - All systems are operating normally
+          <Alert severity="info" sx={{ textAlign: 'center' }}>
+            <AlertTitle>No Alerts Found</AlertTitle>
+            {error ? 'Unable to load alerts - check server connection' : 'No active alerts - All systems are operating normally'}
           </Alert>
         ) : (
           <Grid container spacing={2}>
